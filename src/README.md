@@ -15,7 +15,7 @@ src/hawa/
 ├── config.py       paths, coordinates, weather variable list, cleaning constants
 ├── ingestion/      fetch RAW data from APIs. Does not change values.
 ├── processing/     change data: cleaning, joining, features
-├── models/         forecasting models (baselines, LightGBM)
+├── models/         forecasting models (baselines, LightGBM), training and saving
 ├── evaluation/     time-based splits, metrics, scoring
 └── analysis/       one-off checks that report numbers, to guide decisions
 ```

@@ -80,7 +80,6 @@ def test_baseline_rejects_irregular_grid():
 # ------------------------------------------------------------------ metrics
 def test_score_values_and_common_rows():
     idx = pd.date_range("2024-01-01", periods=4, freq="h", tz="UTC")
-    cols = metrics.target_columns(1)
     y = pd.DataFrame({"y_h01": [10.0, 20.0, 30.0, np.nan]}, index=idx)
     a = pd.DataFrame({"y_h01": [12.0, 18.0, np.nan, 5.0]}, index=idx)   # missing at row 3
     b = pd.DataFrame({"y_h01": [10.0, 20.0, 33.0, 5.0]}, index=idx)

@@ -3,7 +3,9 @@
 | File | Job |
 |---|---|
 | `baselines.py` | simple baselines every real model must beat |
-| `learners.py` | LightGBM, one model per forecast horizon |
+| `learners.py` | LightGBM, one model per forecast horizon: `fit_models`, `predict_models`, `fit_predict` |
+| `train.py` | train the 24 models on the full data and save them as a bundle |
+| `bundle.py` | save and load a bundle (models + metadata) |
 
 ## `baselines.py`
 
@@ -31,9 +33,27 @@ Model: LightGBM, gradient-boosted trees (settings in `config.LIGHTGBM_PARAMS`). 
 - Training rows must have a real target for that horizon. Inputs may have gaps.
 - Predictions are clipped at 0 (PM2.5 cannot be negative).
 - Settings were checked in one small tuning test (6 settings, walk-forward; `docs/decisions.md`, M9). The random seed is `config.RANDOM_SEED`.
-- Functions: `make_model()`, `fit_predict(df, feature_cols, train_mask, predict_index, horizons)`.
+- Functions: `make_model()`, `fit_models(df, feature_cols, train_mask, horizons)` -> `{h: model}`, `predict_models(models, X, feature_cols)`, `fit_predict(...)` (both in one go, used by evaluation).
 - Tests (`tests/test_learners.py`): the models learn a simple pattern, training uses only the masked rows (rows outside the mask never influence it), predictions are never negative.
 
 ### Planned here
 
 Experiments, one at a time, each measured against the baselines: tuning, model saving (MLflow).
+
+## `train.py` and `bundle.py`: saving a model
+
+```
+python -m hawa.models.train                            # train on all available origins
+python -m hawa.models.train --train-until 2024-12-01   # a "frozen" model: only origins before that date (minus 24 h)
+```
+
+Writes a **bundle**, a folder `models/<station>_to_<last training origin>/`:
+
+| File | Content |
+|---|---|
+| `models.joblib` | the 24 fitted LightGBM models, `{horizon: model}` |
+| `metadata.json` | feature columns **in order**, LightGBM settings, seed, training data range and size, the data file name and its SHA-256 hash, git commit, library versions |
+
+Why the metadata matters: a forecast job must build exactly the features listed there, in that order. A test (`test_live_features_equal_training_features`) checks that features built from the history up to hour `t` (what a live job has) equal the training features of the same row. `models/` is not in git (large, versioned with MLflow/DVC later).
+
+Tests: `tests/test_train.py` (metadata, training gap, save/load gives identical predictions).

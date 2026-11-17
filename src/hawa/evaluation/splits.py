@@ -80,3 +80,12 @@ def test_masks(index, eval_winter, train_until_winter):
     start_local = pd.Timestamp(f"{train_until_winter}-12-01") - pd.Timedelta(hours=config.TRAIN_GAP_H)
     train_mask = _local(index).tz_localize(None) < start_local
     return train_mask, eval_mask
+
+
+def origins_before(index, local_date, gap_h=config.TRAIN_GAP_H):
+    """Boolean mask: origins earlier than `local_date` (Kathmandu, 'YYYY-MM-DD') minus `gap_h` hours.
+
+    The gap keeps training targets (up to 24 h ahead) from reaching past that date.
+    """
+    cutoff = pd.Timestamp(local_date) - pd.Timedelta(hours=gap_h)
+    return (_local(index).tz_localize(None) < cutoff)

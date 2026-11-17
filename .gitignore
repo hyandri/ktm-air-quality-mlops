@@ -16,6 +16,10 @@ data/processed/*
 # notebooks
 .ipynb_checkpoints/
 
+# saved models (tracked with MLflow / DVC later, not git)
+models/*
+!models/.gitkeep
+
 # generated results (the numbers that matter are recorded in docs/decisions.md)
 reports/*
 !reports/.gitkeep

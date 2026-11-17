@@ -60,3 +60,20 @@ def test_feature_columns_exclude_weather_pm25_and_targets():
     cols = features.feature_columns(features.add_features(df))
     assert config.MODEL_WEATHER_VARIABLES[0] not in cols
     assert "pm25" not in cols and "y_h01" not in cols and "pm25_filled" in cols
+
+
+def test_live_features_equal_training_features():
+    """Training/serving skew check: features computed from the history up to hour t only (what a live
+    forecast has) must equal the features of the same row computed on the full table (training)."""
+    import numpy as np
+
+    from hawa.processing import build_dataset as b
+    rng = np.random.default_rng(3)
+    idx = pd.date_range("2022-01-01", periods=600, freq="h", tz="UTC", name="timestamp_utc")
+    pm = pd.Series(rng.uniform(10, 150, len(idx)), index=idx)
+    pm.iloc[[50, 51, 52, 53, 54, 200, 201, 400]] = np.nan          # gaps, including one longer than the 3 h fill
+    full = features.add_features(b.add_time_features(pd.DataFrame({"pm25": pm})))
+    cols = features.feature_columns(full)
+    for t in (60, 203, 300, 599):
+        live = features.add_features(b.add_time_features(pd.DataFrame({"pm25": pm.iloc[: t + 1]})))
+        pd.testing.assert_series_equal(live.iloc[-1][cols], full.iloc[t][cols], check_names=False)

@@ -60,7 +60,9 @@ python -m hawa.processing.features
 python -m hawa.evaluation.evaluate_baselines
 python -m hawa.evaluation.evaluate_models
 python -m hawa.evaluation.walk_forward
+python -m hawa.models.train
 python -m hawa.evaluation.walk_forward
+python -m hawa.models.train
 python -m hawa.analysis.sensor_scorecard --start 2025-09-01
 python -m hawa.analysis.openmeteo_probe
 ```

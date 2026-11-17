@@ -27,6 +27,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
 REPORTS_DIR = PROJECT_ROOT / "reports"
+MODELS_DIR = PROJECT_ROOT / "models"   # saved model bundles (not in git)
 PROCESSED_DIR = DATA_DIR / "processed"
 
 OPENAQ_RAW = RAW_DIR / "openaq"

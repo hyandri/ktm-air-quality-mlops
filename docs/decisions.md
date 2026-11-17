@@ -41,6 +41,16 @@ Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–
 | M8 | Does future weather (weather at t+h, `fut_*`) help? Walk-forward, optimistic test | Mean gain over the bar: 13.5% vs 12.5% (no weather) and 12.7% (weather at t). Gain in MAE per winter: 0.37, 0.35, 0.18, 0.04 µg/m³ (about 1%). Better in all 4 winters, but small. In 2023/24 it does not fix the weak horizons (h14–16 worse than no weather) | **small gain, upper bound only.** A real forecast has errors, so the true gain is likely smaller. **Weather removed from the models** (decision: not worth the complexity) |
 | M9 | Do other LightGBM settings help? 6 settings, walk-forward (rules fixed before the run: win 4/4, beat base by ≥ 0.3 points, simplest wins) | Mean gain over the bar: base 12.5, small_trees 12.6, small_trees_strict 12.7, big_trees 12.3, fewer_columns 12.6, **slow_more_trees 12.9** (600 trees, learning rate 0.025). All won 4/4. Only slow_more_trees beat base by ≥ 0.3 (about 0.08 µg/m³ MAE, better in all 4 winters). 2023/24 stays weak (+3.3%) | **adopt slow_more_trees** (only one passed the rule). The gain is tiny: settings barely matter, the model has reached a plateau. `tune.py` and the grid removed |
 
+## MLOps decisions
+
+| # | Decision | Why |
+|---|---|---|
+| O1 | Basic CI from the start: GitHub Actions runs `ruff check`, `pytest` and `--help` of the main commands on Python 3.10 and 3.12 | cheap, and every later step is checked automatically |
+| O2 | A trained model is a **bundle**: `models.joblib` (24 models) + `metadata.json` (feature list in order, settings, data range, data hash, git commit, versions) | a live forecast must build exactly the training features; the metadata makes a model traceable |
+| O3 | A test checks that features built from history up to `t` equal the training features of that row | catches training/serving skew early (a risk both Claude and ChatGPT named) |
+| O4 | `train --train-until DATE` makes a frozen model | the sensor transfer test needs a model that has not seen the tested period |
+| O5 | Do not automate retraining yet. First log forecast, actual, error, horizon, model version (monitoring), then decide | a retrained model can be worse; evidence first |
+
 ## Final test result (E5)
 
 Model: LightGBM, absolute-error loss, 600 trees, learning rate 0.025, 24 PM2.5-history and time inputs, no weather.
