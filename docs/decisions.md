@@ -81,10 +81,23 @@ What it says:
 - Retraining once a year helped a little (+1.1 points, about 0.15 µg/m³ MAE; better at every horizon shown). A model one year old lost little. Only one winter shows this, so treat it as a hint.
 - Limits: one station (Embassy), winters only, two test winters. Whole-year performance is not tested. Not a health-warning claim.
 
+### O9. Live sensor shortlist
+The batch job forecasts 8 sensors in `config.LIVE_SENSORS` (AirGradient sensors near Kathmandu plus KIAS).
+Rule used: at least 1,700 scored hours and at least 10% gain over the best baseline in the sensor transfer test.
+Caveat: the shortlist was chosen on the same winter it was scored on, so the gain is optimistic.
+
+### O10. Batch forecast design
+- Origin = last complete hour; horizon h = hour start at origin + h. The running hour is never used.
+- Features are built by the training code (`add_features`); a test checks live and training rows are equal.
+- A sensor with its newest real value older than 6 h is skipped, with a printed reason.
+- Output is an idempotent CSV (dedupe on sensor, model, origin, horizon). It is the base for forecast-vs-actual monitoring.
+- Values are on the sensor scale and not calibrated. Calibration is a later experiment (see open questions).
+
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?
 - Weather was tested only on winters (Dec–Feb, dry). Does it matter in other seasons (pre-monsoon smoke, monsoon rain)? Test when we add whole-year tables.
+- Scale: how to calibrate sensor-scale forecasts (AirGradient is about 1.56x the Embassy) without touching the locked test winters?
 - Sin/cos calendar features were made for Ridge. Trees do not need them: check if they can go.
 
 ## Cleanup gate (before each new stage)

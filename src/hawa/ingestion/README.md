@@ -67,6 +67,11 @@ Output: `loc<ID>_sensor<SID>_<parameter>_<endpoint>.csv`. `period.datetimeFrom.u
 - The AirNow-derived locations (Embassy 3459, Phora 3460) return many rows with an empty `value`. That is normal; the cleaning step handles it.
 - The OpenAQ S3 archive (`openaq-data-archive`) is an alternative for bulk history. We have not used it.
 
+### `fetch_recent_hours(location_id, sensor_id, hours_back=240, now=None)`
+
+Used by the live batch forecast. Gets the last `hours_back` hours of one sensor from `/sensors/<id>/hours`
+(OpenAQ's hourly averages) and returns a flat table, or an empty table if there is nothing. No caching: live data must be fresh.
+
 ## `openmeteo.py`
 
 No key. Free for non-commercial use (about 10,000 calls/day). Licence CC BY 4.0, keep the attribution.

@@ -150,6 +150,20 @@ def _rows_to_frame(rows, location_id, sensor_id, parameter):
     return df
 
 
+def fetch_recent_hours(location_id, sensor_id, hours_back=240, now=None, timeout=60):
+    """Raw hourly PM2.5 of one sensor for the last `hours_back` hours (no cache: live data changes).
+
+    Returns the same flat table as `download_location` writes, or an empty table if the API has no rows.
+    """
+    now = now or datetime.now(timezone.utc)
+    rows = _get_all_pages(f"/sensors/{sensor_id}/hours",
+                          {"datetime_from": _to_iso(now - timedelta(hours=hours_back)),
+                           "datetime_to": _to_iso(now)}, timeout)
+    if not rows:
+        return pd.DataFrame()
+    return _rows_to_frame(rows, location_id, sensor_id, "pm25")
+
+
 def download_location(location_id, start, end, params=("pm25",), out_dir=config.OPENAQ_RAW,
                       window_days=30, endpoint="hours", timeout=120, quiet=False):
     """Download raw history of the wanted parameters at one location.

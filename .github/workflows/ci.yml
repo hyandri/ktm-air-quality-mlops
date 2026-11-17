@@ -31,3 +31,4 @@ jobs:
           python -m hawa.evaluation.walk_forward --help
           python -m hawa.evaluation.final_test --help
           python -m hawa.processing.features --help
+          python -m hawa.forecasting.batch --help

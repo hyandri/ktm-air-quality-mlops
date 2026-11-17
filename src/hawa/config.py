@@ -28,6 +28,7 @@ RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 MODELS_DIR = PROJECT_ROOT / "models"   # saved model bundles (not in git)
+FORECASTS_DIR = DATA_DIR / "forecasts"   # forecasts written by the batch job (not in git)
 MLFLOW_DB = PROJECT_ROOT / "mlflow.db"              # MLflow run history (SQLite file, not in git)
 MLFLOW_ARTIFACT_DIR = PROJECT_ROOT / "mlartifacts"  # files MLflow stores per run (not in git)
 MLFLOW_TRACKING_URI = f"sqlite:///{MLFLOW_DB}"
@@ -64,6 +65,23 @@ MODEL_WEATHER_VARIABLES = [v for v in WEATHER_VARIABLES if v != "boundary_layer_
 # Archived forecasts (what a live model would have seen) exist from this date;
 # before it only ERA5 is available.
 FORECAST_WEATHER_START = "2021-01-01"
+
+# ------------------------------------------------------------------ live forecasts
+# Live sensors for the batch forecast. Rule (docs/decisions.md, O9): in the sensor transfer test
+# (winter 2025/26) at least 1,700 scored hours and a gain of at least 10% over the baselines.
+# Chosen on that one winter, so their gains are somewhat optimistic.
+LIVE_SENSORS = (
+    {"name": "Golfutar SC-17", "location_id": 6093549, "sensor_id": 14363845},
+    {"name": "Kadhaghari SC-42", "location_id": 6128821, "sensor_id": 14623361},
+    {"name": "Sitapaila SC-30", "location_id": 6120977, "sensor_id": 14564638},
+    {"name": "Tyanglaphat SC-21", "location_id": 6094777, "sensor_id": 14372566},
+    {"name": "Chovar SC-07", "location_id": 5676345, "sensor_id": 14153368},
+    {"name": "Lagankhel SC-05", "location_id": 5509788, "sensor_id": 14272754},
+    {"name": "Kathmandu Institute of Applied Sciences", "location_id": 4121681, "sensor_id": 12914045},
+    {"name": "Sunakothi SC-06", "location_id": 5634500, "sensor_id": 14153363},
+)
+LIVE_HISTORY_HOURS = 240   # how far back the batch job asks for data (the longest feature looks back 168 h)
+MAX_DATA_AGE_H = 6         # no forecast if the newest real measurement is older than this many hours
 
 # ------------------------------------------------------------------- dataset
 HORIZONS = 24             # forecast 1..24 hours ahead
