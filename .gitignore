@@ -24,6 +24,7 @@ reports/*
 .vscode/
 .idea/
 .DS_Store
+.~lock.*
 
 # experiment tracking (added with MLflow later)
 mlruns/
