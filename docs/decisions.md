@@ -41,6 +41,33 @@ Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–
 | M8 | Does future weather (weather at t+h, `fut_*`) help? Walk-forward, optimistic test | Mean gain over the bar: 13.5% vs 12.5% (no weather) and 12.7% (weather at t). Gain in MAE per winter: 0.37, 0.35, 0.18, 0.04 µg/m³ (about 1%). Better in all 4 winters, but small. In 2023/24 it does not fix the weak horizons (h14–16 worse than no weather) | **small gain, upper bound only.** A real forecast has errors, so the true gain is likely smaller. **Weather removed from the models** (decision: not worth the complexity) |
 | M9 | Do other LightGBM settings help? 6 settings, walk-forward (rules fixed before the run: win 4/4, beat base by ≥ 0.3 points, simplest wins) | Mean gain over the bar: base 12.5, small_trees 12.6, small_trees_strict 12.7, big_trees 12.3, fewer_columns 12.6, **slow_more_trees 12.9** (600 trees, learning rate 0.025). All won 4/4. Only slow_more_trees beat base by ≥ 0.3 (about 0.08 µg/m³ MAE, better in all 4 winters). 2023/24 stays weak (+3.3%) | **adopt slow_more_trees** (only one passed the rule). The gain is tiny: settings barely matter, the model has reached a plateau. `tune.py` and the grid removed |
 
+## Final test result (E5)
+
+Model: LightGBM, absolute-error loss, 600 trees, learning rate 0.025, 24 PM2.5-history and time inputs, no weather.
+Embassy station, winters only, trained on all seasons. Test winters were never used for any choice. No changes were made after this run.
+
+| Winter | Model | Mean MAE | Best baseline | Gain over the bar |
+|---|---|---|---|---|
+| 2024/25 | frozen (trained before winter 2024) | 15.42 | 18.87 | **+18.3%** |
+| 2025/26 | frozen | 11.44 | 13.50 | **+15.2%** |
+| 2025/26 | retrained (trained before winter 2025) | 11.29 | 13.50 | **+16.3%** |
+
+Gain over the bar by horizon (mean of the per-horizon percentages in brackets):
+
+| Winter / model | h1 | h3 | h6 | h12 | h18 | h24 |
+|---|---|---|---|---|---|---|
+| 2024/25 frozen (17.5) | 27.8 | 27.8 | 20.0 | 15.9 | 14.3 | 13.1 |
+| 2025/26 frozen (14.6) | 26.4 | 21.7 | 14.8 | 13.2 | 11.5 | 13.7 |
+| 2025/26 retrained (15.6) | 27.2 | 22.9 | 16.5 | 14.3 | 12.2 | 14.3 |
+
+Scored origins: 2,160 per winter. Training origins: 67,893 (frozen), 76,653 (retrained).
+
+What it says:
+- The model beats the best baseline in both unseen winters (+18.3%, +15.2%), in line with the walk-forward winters (+11.5 to +18.7), so the weak 2023/24 (+3.3%) was the odd winter.
+- The gain is largest at short horizons (about +27% at h1) and shrinks to about +13% at h24, but stays positive at every horizon shown.
+- Retraining once a year helped a little (+1.1 points, about 0.15 µg/m³ MAE; better at every horizon shown). A model one year old lost little. Only one winter shows this, so treat it as a hint.
+- Limits: one station (Embassy), winters only, two test winters. Whole-year performance is not tested. Not a health-warning claim.
+
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?
