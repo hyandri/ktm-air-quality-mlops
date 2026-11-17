@@ -7,6 +7,7 @@ How we decide whether a forecast is good. Rules here protect us from fooling our
 | `splits.py` | time-based train / validation / test masks |
 | `metrics.py` | per-horizon MAE and RMSE, fair comparison between models |
 | `evaluate_baselines.py` | score the baselines on a split, save a report |
+| `tune.py` | small LightGBM settings test with walk-forward |
 | `evaluate_models.py` | train LightGBM, score them with the baselines on validation |
 | `walk_forward.py` | score several winters in turn (expanding training window) |
 
@@ -80,6 +81,15 @@ python -m hawa.evaluation.walk_forward
 - Prints mean MAE per winter, the % gain over the best baseline, and "folds won" (how many winters the model beats the bar in).
 - A model should win in most folds, not just on average. Writes `reports/walkforward_<station>.csv`.
 - Takes about 2 minutes.
+
+## Tuning (`tune.py`)
+
+```
+python -m hawa.evaluation.tune
+python -m hawa.evaluation.tune --only base,small_trees
+```
+
+Tries the 6 small LightGBM settings in `config.TUNING_GRID` with the same walk-forward winters (about 12 minutes). The selection rules are written at the top of `tune.py` **before** the run: a setting must win all 4 winters, beat `base` by at least 0.3 points of mean gain, and the simplest one wins ties. If nothing passes, we keep `base`. Writes `reports/tuning_<station>.csv`. The test winters are not used.
 
 ## Adding a model to the comparison
 

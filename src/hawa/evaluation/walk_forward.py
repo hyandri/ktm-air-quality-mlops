@@ -25,12 +25,17 @@ from hawa.models import baselines, learners
 from hawa.processing.features import feature_columns
 
 
-def run_fold(df, winter_year, cols):
-    """Score baselines and LightGBM on one winter. Returns the long score table."""
+def run_fold(df, winter_year, cols, models=None):
+    """Score baselines and LightGBM on one winter. Returns the long score table.
+
+    `models` maps a name to LightGBM setting overrides (default: one model "lightgbm", base settings).
+    """
+    models = models or {"lightgbm": None}
     train_mask, eval_mask = splits.walk_forward_masks(df.index, winter_year)
     eval_index = df.index[eval_mask]
     preds = {name: fn(df).loc[eval_index] for name, fn in baselines.BASELINES.items()}
-    preds["lightgbm"] = learners.fit_predict(df, cols, train_mask, eval_index)
+    for name, params in models.items():
+        preds[name] = learners.fit_predict(df, cols, train_mask, eval_index, params=params)
     sc = metrics.score(df.loc[eval_index, metrics.target_columns()], preds)
     sc.insert(0, "fold", f"{winter_year}/{str(winter_year + 1)[2:]}")
     print(f"  fold {winter_year}/{str(winter_year + 1)[2:]}: train origins {int(train_mask.sum())}, "
@@ -43,6 +48,18 @@ def fold_table(scores, baseline_names):
     t = scores.groupby(["fold", "model"])["mae"].mean().unstack("model")
     t["best_baseline"] = t[list(baseline_names)].min(axis=1)
     return t
+
+
+def print_summary(all_scores, model_names):
+    """Print mean MAE per winter and the % gain over the best baseline for the given models."""
+    t = fold_table(all_scores, list(baselines.BASELINES))
+    print("\nMean MAE over 24 horizons, per scored winter (ug/m3):\n")
+    print(t.round(2).to_string())
+    gain = (100 * (1 - t[model_names].div(t["best_baseline"], axis=0))).round(1)
+    gain.loc["mean of folds"] = gain.mean().round(1)
+    gain.loc["folds won"] = (gain.iloc[:-1] > 0).sum().astype(int)
+    print("\n% lower MAE than the best baseline (positive = better):\n")
+    print(gain.to_string())
 
 
 def main(argv=None):
@@ -62,15 +79,7 @@ def main(argv=None):
     out.parent.mkdir(parents=True, exist_ok=True)
     all_scores.to_csv(out, index=False)
 
-    base = list(baselines.BASELINES)
-    t = fold_table(all_scores, base)
-    print("\nMean MAE over 24 horizons, per scored winter (ug/m3):\n")
-    print(t.round(2).to_string())
-    gain = (100 * (1 - t[["lightgbm"]].div(t["best_baseline"], axis=0))).round(1)
-    gain.loc["mean of folds"] = gain.mean().round(1)
-    gain.loc["folds won"] = (gain.iloc[:-1] > 0).sum().astype(int)
-    print("\n% lower MAE than the best baseline (positive = better):\n")
-    print(gain.to_string())
+    print_summary(all_scores, ["lightgbm"])
     print(f"\nSaved -> {out}")
 
 

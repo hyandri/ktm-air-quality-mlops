@@ -39,11 +39,16 @@ Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–
 | M7 | Where is it strong or weak? | Strong at h1–6 in every winter (2021/22: 13.4 vs 18.2). In 2023/24 it loses to the bar at h=7 and h=14–21. The baseline was also much better that winter (h1–6: 15.3 vs 18–25 in the other winters) | long horizons are the weak spot. Earlier idea "calm winters are easier" was **not supported**: 2021/22 is equally calm and gained ~19% |
 | M8 | Does future weather (weather at t+h, `fut_*`) help? Walk-forward, optimistic test | Mean gain over the bar: 13.5% vs 12.5% (no weather) and 12.7% (weather at t). Gain in MAE per winter: 0.37, 0.35, 0.18, 0.04 µg/m³ (about 1%). Better in all 4 winters, but small. In 2023/24 it does not fix the weak horizons (h14–16 worse than no weather) | **small gain, upper bound only.** A real forecast has errors, so the true gain is likely smaller. **Weather removed from the models** (decision: not worth the complexity) |
 
+## Experiment in progress
+
+**M9: LightGBM settings.** 6 settings in `config.TUNING_GRID`, walk-forward, `evaluation/tune.py`.
+Rules fixed before the run: must win 4/4 winters, must beat `base` by ≥ 0.3 points of mean gain, simplest wins ties, otherwise keep `base`.
+Result: _to be filled after the run._
+
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?
 - Weather was tested only on winters (Dec–Feb, dry). Does it matter in other seasons (pre-monsoon smoke, monsoon rain)? Test when we add whole-year tables.
-- Tuning of LightGBM settings: not done.
 - Sin/cos calendar features were made for Ridge. Trees do not need them: check if they can go.
 
 ## Cleanup gate (before each new stage)
