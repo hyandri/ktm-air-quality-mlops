@@ -19,7 +19,7 @@ AQI-MLOPS/
 │   │   └── openmeteo.py     weather
 │   ├── processing/
 │   │   └── clean.py       cleaning rules -> data/processed
-│   ├── models/            baselines (Ridge, LightGBM later)
+│   ├── models/            baselines, Ridge, LightGBM
 │   ├── evaluation/        splits, metrics, scoring
 │   └── analysis/          one-off checks that guide decisions
 │       ├── sensor_scorecard.py
@@ -55,7 +55,10 @@ python -m hawa.ingestion.openaq download --location-id 3459 --start 2021-03-01 -
 python -m hawa.ingestion.openmeteo --source archive --start 2017-03-01 --end 2026-11-05
 python -m hawa.processing.clean
 python -m hawa.processing.build_dataset
+python -m hawa.processing.features
 python -m hawa.evaluation.evaluate_baselines
+python -m hawa.evaluation.evaluate_models --train-scope winter
+python -m hawa.evaluation.evaluate_models --train-scope all
 python -m hawa.analysis.sensor_scorecard --start 2025-09-01
 python -m hawa.analysis.openmeteo_probe
 ```

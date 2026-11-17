@@ -47,3 +47,19 @@ def summarize(scores, horizons=(1, 3, 6, 12, 18, 24)):
     out["RMSE mean(1-24)"] = scores.groupby("model")["rmse"].mean()
     out["n (h=1)"] = scores[scores["horizon"] == 1].set_index("model")["n"]
     return out.round(2)
+
+
+def improvement_vs_best_baseline(scores, baseline_names, horizons=(1, 3, 6, 12, 18, 24)):
+    """For each non-baseline model: % lower MAE than the BEST baseline at that horizon.
+
+    Positive = better than the bar. Also gives the mean over all horizons.
+    """
+    wide = scores.pivot(index="model", columns="horizon", values="mae")
+    bar = wide.loc[list(baseline_names)].min()
+    rows = {}
+    for m in wide.index.difference(list(baseline_names)):
+        gain = 100 * (bar - wide.loc[m]) / bar
+        r = {f"h{h:02d}": gain[h] for h in horizons if h in gain.index}
+        r["mean(1-24)"] = gain.mean()
+        rows[m] = r
+    return pd.DataFrame(rows).T.round(1)

@@ -6,6 +6,7 @@ Turns raw files into clean, modelling-ready files. Reads from `data/raw/`, write
 |---|---|
 | `clean.py` | clean PM2.5 and build one hourly file per station |
 | `build_dataset.py` | join clean PM2.5 and weather into one modelling table with 24 targets |
+| `features.py` | add PM2.5 history features (lags, rolling means, trend) |
 
 ## `clean.py`
 
@@ -94,6 +95,36 @@ Rules this file follows:
 
 Functions: `read_pm25`, `read_weather`, `choose_weather`, `add_time_features`, `add_targets`, `build`, `report`.
 
+## `features.py`
+
+```
+python -m hawa.processing.features        # reads <station>_dataset_auto.csv, writes <station>_features_auto.csv
+```
+
+Adds what the model learns from: the recent history of PM2.5. Every feature at row `t` uses only hours `t, t-1, t-2, ...`; a test changes the future and checks nothing earlier moves.
+
+| Feature | Meaning |
+|---|---|
+| `pm25_filled` | current PM2.5; if the last 1–3 hours are missing, the last real value is carried forward |
+| `pm25_age_h` | hours since the last real measurement (0 = measured now) |
+| `pm25_lag001 ... lag168` | PM2.5 1, 2, 3, 6, 12, 24, 48, 168 hours earlier (168 h = one week) |
+| `pm25_mean006 ... mean168` | average of the last 6, 24, 72, 168 hours |
+| `pm25_std024` | spread of the last 24 hours (is the air changing fast?) |
+| `pm25_change03` | now minus 3 hours ago (rising or falling) |
+
+**Missing-data rule (decided):**
+- A gap is bridged for at most `FILL_LIMIT_H = 3` hours, by carrying the last real value **forward**.
+- We do not interpolate, because interpolation needs the next value, which is the future.
+- Longer gaps stay empty. `pm25_age_h` tells the model how old the last real value is.
+- `pm25` (raw) and the targets `y_h01 ... y_h24` are **never** filled.
+- On the Embassy this rescues about 4,200 hours (PM2.5 available 71.3% → 76.4%).
+
+`feature_columns(df)` lists the columns a model may use as inputs (34 now: 10 weather, 8 time, 16 PM2.5 history). It excludes raw `pm25`, `weather_source` and all targets.
+
+Constants are in `config.py`: `FILL_LIMIT_H`, `LAG_HOURS`, `ROLL_WINDOWS`.
+
+Not included yet: future weather (the forecast for `t+1 ... t+24`) and weather lags. We add them as experiments, so we can measure whether they help.
+
 ### Next in this folder (planned)
 
-Lag and rolling features (short gaps of up to 3 h may be filled for lags only; the target is never filled). Splits live in `hawa.evaluation`.
+Weather experiments (future forecast values as features).

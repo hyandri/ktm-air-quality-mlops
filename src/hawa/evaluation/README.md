@@ -7,6 +7,7 @@ How we decide whether a forecast is good. Rules here protect us from fooling our
 | `splits.py` | time-based train / validation / test masks |
 | `metrics.py` | per-horizon MAE and RMSE, fair comparison between models |
 | `evaluate_baselines.py` | score the baselines on a split, save a report |
+| `evaluate_models.py` | train Ridge and LightGBM, score them with the baselines on validation |
 
 ## Splits (`splits.py`)
 
@@ -45,6 +46,20 @@ python -m hawa.evaluation.evaluate_baselines --split test --final   # final resu
 Reads `data/processed/<station>_dataset_<weather>.csv`. Writes `reports/baselines_<station>_<split>_<scope>.csv`.
 Baselines are computed on the full hourly grid (they look backward), then cut to the split.
 Options: `--station`, `--weather`, `--dataset`.
+
+## Scoring models (`evaluate_models.py`)
+
+```
+python -m hawa.evaluation.evaluate_models --train-scope winter   # train on winters only
+python -m hawa.evaluation.evaluate_models --train-scope all      # train on all seasons
+```
+
+- **Training data:** `winter` = origins in the training winters (2017/18 to 2021/22); `all` = every origin before 2022-12-01. Both end before the validation winter.
+- **Scoring:** always on validation winter 2023/24, same rows for every model (baselines included), so the two training scopes are directly comparable.
+- **The test winters are never used here.** Only validation, until we decide the final model.
+- Prints the MAE table and the "% lower MAE than the best baseline at that horizon" table (`metrics.improvement_vs_best_baseline`). Positive = better than the bar.
+- Writes `reports/models_<station>_validation_train-<scope>.csv`.
+- Needs `data/processed/<station>_features_<weather>.csv` (from `hawa.processing.features`).
 
 ## Adding a model to the comparison
 

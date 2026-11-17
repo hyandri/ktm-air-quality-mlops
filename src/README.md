@@ -50,8 +50,10 @@ One place for things several modules need. Change them here, not inside modules.
 | `WEATHER_VARIABLES` | the 11 candidate weather variables |
 | `ERROR_VALUES`, `FLAT_RUN_HOURS` | cleaning constants (`985`, `12`) |
 | `MODEL_WEATHER_VARIABLES`, `FORECAST_WEATHER_START` | weather columns used in models; date from which archived forecasts are used |
+| `FILL_LIMIT_H`, `LAG_HOURS`, `ROLL_WINDOWS` | feature settings (see `processing/README.md`) |
 | `HORIZONS`, `LOCAL_UTC_OFFSET_H` | 24 forecast hours; Kathmandu offset 5.75 h |
 | `WINTER_MONTHS`, `TRAIN_WINTERS`, `VALIDATION_WINTERS`, `TEST_WINTERS`, `TRAIN_ALL_END`, `VALIDATION_ALL`, `TEST_ALL_START` | split definitions (see `evaluation/README.md`) |
+| `RANDOM_SEED`, `RIDGE_ALPHA`, `LIGHTGBM_PARAMS`, `LINEAR_EXCLUDE` | model settings (see `models/README.md`) |
 | `REPORTS_DIR` | `reports/`: result tables from evaluation scripts |
 
 `config.py` also reads a `.env` file in the project root (lines like `OPENAQ_API_KEY=...`).

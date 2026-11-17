@@ -1,6 +1,8 @@
 # Runtime
 pandas
 requests
+scikit-learn
+lightgbm
 
 # Dev tools ([dev] extra in pyproject.toml)
 pytest

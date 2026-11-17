@@ -81,3 +81,17 @@ TEST_WINTERS = (2024, 2025)
 TRAIN_ALL_END = "2022-12-01"
 VALIDATION_ALL = ("2023-12-01", "2024-12-01")
 TEST_ALL_START = "2024-12-01"
+
+# ------------------------------------------------------------------- features
+FILL_LIMIT_H = 3                      # carry the last real PM2.5 forward for at most this many hours (features only)
+LAG_HOURS = (1, 2, 3, 6, 12, 24, 48, 168)       # PM2.5 this many hours before the forecast origin
+ROLL_WINDOWS = (6, 24, 72, 168)       # rolling mean windows (hours, ending at the origin hour)
+
+# --------------------------------------------------------------------- models
+RANDOM_SEED = 42
+RIDGE_ALPHA = 1.0
+LIGHTGBM_PARAMS = dict(n_estimators=300, learning_rate=0.05, num_leaves=31, min_child_samples=50,
+                       subsample=0.8, subsample_freq=1, colsample_bytree=0.8, verbose=-1)
+# Calendar columns that make no sense as a straight line (month 12 is not "bigger" than month 1);
+# Ridge uses the sin/cos versions instead. LightGBM gets all columns.
+LINEAR_EXCLUDE = ("month", "dayofweek", "dayofyear", "hour_local")
