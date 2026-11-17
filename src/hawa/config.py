@@ -89,12 +89,8 @@ ROLL_WINDOWS = (6, 24, 72, 168)       # rolling mean windows (hours, ending at t
 
 # --------------------------------------------------------------------- models
 RANDOM_SEED = 42
-RIDGE_ALPHA = 1.0
-LIGHTGBM_PARAMS = dict(n_estimators=300, learning_rate=0.05, num_leaves=31, min_child_samples=50,
+LIGHTGBM_PARAMS = dict(objective="l1", n_estimators=300, learning_rate=0.05, num_leaves=31, min_child_samples=50,
                        subsample=0.8, subsample_freq=1, colsample_bytree=0.8, verbose=-1)
-# Calendar columns that make no sense as a straight line (month 12 is not "bigger" than month 1);
-# Ridge uses the sin/cos versions instead. LightGBM gets all columns.
-LINEAR_EXCLUDE = ("month", "dayofweek", "dayofyear", "hour_local")
 
 # ----------------------------------------------------------------- walk-forward
 # Each winter below is scored in turn, training on ALL data before it (expanding window).

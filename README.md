@@ -19,7 +19,7 @@ AQI-MLOPS/
 │   │   └── openmeteo.py     weather
 │   ├── processing/
 │   │   └── clean.py       cleaning rules -> data/processed
-│   ├── models/            baselines, Ridge, LightGBM
+│   ├── models/            baselines, LightGBM
 │   ├── evaluation/        splits, metrics, scoring
 │   └── analysis/          one-off checks that guide decisions
 │       ├── sensor_scorecard.py
@@ -58,8 +58,8 @@ python -m hawa.processing.clean
 python -m hawa.processing.build_dataset
 python -m hawa.processing.features
 python -m hawa.evaluation.evaluate_baselines
-python -m hawa.evaluation.evaluate_models --train-scope winter
-python -m hawa.evaluation.evaluate_models --train-scope all
+python -m hawa.evaluation.evaluate_models
+python -m hawa.evaluation.walk_forward
 python -m hawa.evaluation.walk_forward
 python -m hawa.analysis.sensor_scorecard --start 2025-09-01
 python -m hawa.analysis.openmeteo_probe

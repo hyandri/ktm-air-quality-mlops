@@ -15,7 +15,7 @@ src/hawa/
 ├── config.py       paths, coordinates, weather variable list, cleaning constants
 ├── ingestion/      fetch RAW data from APIs. Does not change values.
 ├── processing/     change data: cleaning, joining, features
-├── models/         forecasting models (baselines now; Ridge, LightGBM later)
+├── models/         forecasting models (baselines, LightGBM)
 ├── evaluation/     time-based splits, metrics, scoring
 └── analysis/       one-off checks that report numbers, to guide decisions
 ```
@@ -53,7 +53,7 @@ One place for things several modules need. Change them here, not inside modules.
 | `FILL_LIMIT_H`, `LAG_HOURS`, `ROLL_WINDOWS` | feature settings (see `processing/README.md`) |
 | `HORIZONS`, `LOCAL_UTC_OFFSET_H` | 24 forecast hours; Kathmandu offset 5.75 h |
 | `WINTER_MONTHS`, `TRAIN_WINTERS`, `VALIDATION_WINTERS`, `TEST_WINTERS`, `TRAIN_ALL_END`, `VALIDATION_ALL`, `TEST_ALL_START` | split definitions (see `evaluation/README.md`) |
-| `RANDOM_SEED`, `RIDGE_ALPHA`, `LIGHTGBM_PARAMS`, `LINEAR_EXCLUDE` | model settings (see `models/README.md`) |
+| `RANDOM_SEED`, `LIGHTGBM_PARAMS` | model settings (see `models/README.md`) |
 | `REPORTS_DIR` | `reports/`: result tables from evaluation scripts |
 
 `config.py` also reads a `.env` file in the project root (lines like `OPENAQ_API_KEY=...`).
