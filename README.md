@@ -1,4 +1,4 @@
-# Hawa (AQI-MLOPS)
+# SwachhHawa (AQI-MLOPS)
 
 Hourly PM2.5 forecasting for Kathmandu (24 h ahead) with an MLOps pipeline.
 Current stage: **Stage 0 – data sources verified, raw and clean data ready.**

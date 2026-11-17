@@ -1,0 +1,9 @@
+# Runtime
+pandas
+requests
+
+# Dev tools ([dev] extra in pyproject.toml)
+pytest
+
+# The project itself, editable, so `python -m hawa...` works
+-e .
