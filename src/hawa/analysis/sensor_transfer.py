@@ -111,7 +111,7 @@ def transfer_score(model_bundle, table, winter_year, min_origins=500):
 
 def agreement(sensor, embassy, winter_year, min_hours=200):
     """Part B: sensor vs Embassy at the same winter hours (both are valid-hour Series, UTC hour start)."""
-    both = pd.concat({"s": sensor, "e": embassy}, axis=1).dropna()
+    both = pd.concat({"s": sensor, "e": embassy}, axis=1, sort=True).dropna()
     both = both[splits.winter_start_year(both.index) == winter_year]
     out = {"overlap_h": len(both), "corr": np.nan, "bias": np.nan, "ratio": np.nan}
     if len(both) < min_hours:
