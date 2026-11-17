@@ -88,3 +88,21 @@ def test_score_values_and_common_rows():
     assert s.loc["a", "n"] == s.loc["b", "n"] == 2          # same rows for both models
     assert s.loc["a", "mae"] == 2.0 and s.loc["b", "mae"] == 0.0
     assert s.loc["a", "rmse"] == 2.0
+
+
+# ------------------------------------------------------------- walk-forward
+def test_walk_forward_masks_no_leak():
+    idx = pd.date_range("2017-03-01", "2026-06-01", freq="h", tz="UTC")
+    for y in config.WALK_FORWARD_WINTERS:
+        tr, ev = splits.walk_forward_masks(idx, y)
+        assert tr.any() and ev.any() and not (tr & ev).any()
+        assert idx[tr].max() + pd.Timedelta(hours=24) < idx[ev].min()      # targets stay out of the scored winter
+        assert (splits.winter_start_year(idx[ev]) == y).all()
+
+
+def test_walk_forward_refuses_test_winters_and_config_has_none():
+    idx = pd.date_range("2024-01-01", periods=48, freq="h", tz="UTC")
+    for y in config.TEST_WINTERS:
+        with pytest.raises(ValueError):
+            splits.walk_forward_masks(idx, y)
+    assert not set(config.WALK_FORWARD_WINTERS) & set(config.TEST_WINTERS)

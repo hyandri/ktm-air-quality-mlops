@@ -119,7 +119,7 @@ Adds what the model learns from: the recent history of PM2.5. Every feature at r
 - `pm25` (raw) and the targets `y_h01 ... y_h24` are **never** filled.
 - On the Embassy this rescues about 4,200 hours (PM2.5 available 71.3% → 76.4%).
 
-`feature_columns(df)` lists the columns a model may use as inputs (34 now: 10 weather, 8 time, 16 PM2.5 history). It excludes raw `pm25`, `weather_source` and all targets.
+`feature_columns(df)` lists the columns a model may use as inputs (34 now: 10 weather, 8 time, 16 PM2.5 history). It excludes raw `pm25`, `weather_source` and all targets. `feature_columns(df, include_weather=False)` also drops the weather columns.
 
 Constants are in `config.py`: `FILL_LIMIT_H`, `LAG_HOURS`, `ROLL_WINDOWS`.
 

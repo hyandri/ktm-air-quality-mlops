@@ -95,3 +95,9 @@ LIGHTGBM_PARAMS = dict(n_estimators=300, learning_rate=0.05, num_leaves=31, min_
 # Calendar columns that make no sense as a straight line (month 12 is not "bigger" than month 1);
 # Ridge uses the sin/cos versions instead. LightGBM gets all columns.
 LINEAR_EXCLUDE = ("month", "dayofweek", "dayofyear", "hour_local")
+
+# ----------------------------------------------------------------- walk-forward
+# Each winter below is scored in turn, training on ALL data before it (expanding window).
+# 2017 and 2018 are skipped (too little earlier data), 2022 has no data, and the TEST winters are never used.
+WALK_FORWARD_WINTERS = (2019, 2020, 2021, 2023)
+TRAIN_GAP_H = 24   # training origins must end this many hours before the scored winter starts

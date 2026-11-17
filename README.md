@@ -34,6 +34,7 @@ Rule of thumb: `ingestion` fetches, `processing` changes data, `analysis` only r
 
 ## Documentation
 
+- [docs/decisions.md](docs/decisions.md): what we tried, the numbers, what we chose
 - [data/README.md](data/README.md): every data file, its source, licence, cleaning and known problems
 - [src/README.md](src/README.md): code overview, conventions, how to add modules
 - per-folder docs: [ingestion](src/hawa/ingestion/README.md), [processing](src/hawa/processing/README.md), [models](src/hawa/models/README.md), [evaluation](src/hawa/evaluation/README.md), [analysis](src/hawa/analysis/README.md)
@@ -59,6 +60,7 @@ python -m hawa.processing.features
 python -m hawa.evaluation.evaluate_baselines
 python -m hawa.evaluation.evaluate_models --train-scope winter
 python -m hawa.evaluation.evaluate_models --train-scope all
+python -m hawa.evaluation.walk_forward
 python -m hawa.analysis.sensor_scorecard --start 2025-09-01
 python -m hawa.analysis.openmeteo_probe
 ```

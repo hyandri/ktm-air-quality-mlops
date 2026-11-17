@@ -8,6 +8,7 @@ How we decide whether a forecast is good. Rules here protect us from fooling our
 | `metrics.py` | per-horizon MAE and RMSE, fair comparison between models |
 | `evaluate_baselines.py` | score the baselines on a split, save a report |
 | `evaluate_models.py` | train Ridge and LightGBM, score them with the baselines on validation |
+| `walk_forward.py` | score several winters in turn (expanding training window) |
 
 ## Splits (`splits.py`)
 
@@ -57,9 +58,35 @@ python -m hawa.evaluation.evaluate_models --train-scope all      # train on all 
 - **Training data:** `winter` = origins in the training winters (2017/18 to 2021/22); `all` = every origin before 2022-12-01. Both end before the validation winter.
 - **Scoring:** always on validation winter 2023/24, same rows for every model (baselines included), so the two training scopes are directly comparable.
 - **The test winters are never used here.** Only validation, until we decide the final model.
+- **Experiment switches** (each changes one thing, so the result is comparable with the plain run):
+  - `--feature-set no-weather` drops the 10 weather columns ("does weather help?")
+  - `--objective l1` makes LightGBM minimise absolute error, the same thing MAE scores
+  - Result files get a suffix: `..._train-all_noweather_l1.csv`, and model names in the table carry the same suffix.
 - Prints the MAE table and the "% lower MAE than the best baseline at that horizon" table (`metrics.improvement_vs_best_baseline`). Positive = better than the bar.
 - Writes `reports/models_<station>_validation_train-<scope>.csv`.
 - Needs `data/processed/<station>_features_<weather>.csv` (from `hawa.processing.features`).
+
+## Walk-forward (`walk_forward.py`)
+
+One validation winter is a fragile judge: winters differ a lot (mean PM2.5 from 58 to 87, and the "copy yesterday" error from 13.5 to 26). So we score several winters, each time training only on earlier data, like a live system:
+
+| Fold (scored winter) | Trained on |
+|---|---|
+| 2019/20 | everything before Dec 2019 (minus 24 h) |
+| 2020/21 | everything before Dec 2020 |
+| 2021/22 | everything before Dec 2021 |
+| 2023/24 | everything before Dec 2023 |
+
+```
+python -m hawa.evaluation.walk_forward
+python -m hawa.evaluation.walk_forward --variants lightgbm_l1_noweather,lightgbm_l1_weather
+```
+
+- Folds are in `config.WALK_FORWARD_WINTERS`. **2017 and 2018 are skipped** (too little earlier data), 2022 has no data, and **the test winters are refused** by `splits.walk_forward_masks`.
+- Variants (learner, loss, weather) are listed in `VARIANTS` at the top of the file.
+- Prints mean MAE per winter, the % gain over the best baseline, and "folds won" (how many winters the model beats the bar in).
+- A model should win in most folds, not just on average. Writes `reports/walkforward_<station>.csv`.
+- Takes about 3 minutes.
 
 ## Adding a model to the comparison
 

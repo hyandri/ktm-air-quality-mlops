@@ -54,3 +54,10 @@ def test_improvement_vs_best_baseline():
                        "n": [5, 5, 5], "mae": [10.0, 20.0, 8.0], "rmse": [1, 1, 1]})
     r = metrics.improvement_vs_best_baseline(sc, ["b1", "b2"], horizons=(1,))
     assert r.loc["m", "h01"] == 20.0                        # (10-8)/10
+
+
+def test_lightgbm_l1_objective_runs():
+    df = _df()
+    train = np.arange(len(df)) < 300
+    p = learners.fit_predict("lightgbm", df, ["f1"], train, df.index[300:], horizons=1, objective="l1")
+    assert len(p) == 100 and (p["y_h01"] >= 0).all()

@@ -34,7 +34,8 @@ Registry: `BASELINES = {name: function}`. The dataset must be on a regular hourl
 - Training rows must have a real target for that horizon. Inputs may have gaps.
 - Predictions are clipped at 0 (PM2.5 cannot be negative).
 - **Nothing is tuned yet.** Settings are reasonable defaults, fixed before looking at results. The random seed is `config.RANDOM_SEED`.
-- Functions: `make_model(name)`, `columns_for(name, feature_cols)`, `fit_predict(name, df, feature_cols, train_mask, predict_index)`.
+- `objective`: LightGBM loss. Default is squared error. `"l1"` = absolute error, which matches the MAE score. Ridge always uses squared error.
+- Functions: `make_model(name, objective)`, `columns_for(name, feature_cols)`, `fit_predict(name, df, feature_cols, train_mask, predict_index, horizons, objective)`.
 - Tests (`tests/test_learners.py`): the models learn a simple pattern, training uses only the masked rows (rows outside the mask never influence it), predictions are never negative.
 
 ### Planned here

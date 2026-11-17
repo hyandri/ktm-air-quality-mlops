@@ -23,12 +23,15 @@ from hawa import config
 MODEL_NAMES = ("ridge", "lightgbm")
 
 
-def make_model(name):
+def make_model(name, objective=None):
     if name == "ridge":
         return make_pipeline(SimpleImputer(strategy="median"), StandardScaler(),
                              Ridge(alpha=config.RIDGE_ALPHA))
     if name == "lightgbm":
-        return LGBMRegressor(random_state=config.RANDOM_SEED, **config.LIGHTGBM_PARAMS)
+        params = dict(config.LIGHTGBM_PARAMS)
+        if objective:                       # e.g. "l1" = minimise absolute error (matches the MAE score)
+            params["objective"] = objective
+        return LGBMRegressor(random_state=config.RANDOM_SEED, **params)
     raise ValueError(f"unknown model: {name}")
 
 
@@ -38,10 +41,12 @@ def columns_for(name, feature_cols):
     return list(feature_cols)
 
 
-def fit_predict(name, df, feature_cols, train_mask, predict_index, horizons=config.HORIZONS):
+def fit_predict(name, df, feature_cols, train_mask, predict_index, horizons=config.HORIZONS,
+                objective=None):
     """Train one model per horizon on `df[train_mask]`, predict for `predict_index`.
 
-    Training rows need a real target for that horizon. Returns a DataFrame y_h01 ... y_hNN.
+    Training rows need a real target for that horizon. `objective` only affects LightGBM.
+    Returns a DataFrame y_h01 ... y_hNN.
     """
     cols = columns_for(name, feature_cols)
     X_pred = df.loc[predict_index, cols]
@@ -49,6 +54,6 @@ def fit_predict(name, df, feature_cols, train_mask, predict_index, horizons=conf
     for h in range(1, horizons + 1):
         target = f"y_h{h:02d}"
         rows = df[train_mask & df[target].notna().to_numpy()]
-        model = make_model(name).fit(rows[cols], rows[target])
+        model = make_model(name, objective).fit(rows[cols], rows[target])
         out[target] = np.clip(model.predict(X_pred), 0, None)
     return pd.DataFrame(out, index=predict_index)

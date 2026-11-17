@@ -50,3 +50,12 @@ def test_irregular_grid_rejected():
     d = _df([1.0, 2.0, 3.0]).drop(_df([1.0, 2.0, 3.0]).index[1])
     with pytest.raises(ValueError):
         features.add_features(d)
+
+
+def test_feature_columns_can_drop_weather():
+    from hawa import config
+    df = _df(list(range(30)))
+    df[config.MODEL_WEATHER_VARIABLES[0]] = 1.0
+    f = features.add_features(df)
+    assert config.MODEL_WEATHER_VARIABLES[0] in features.feature_columns(f)
+    assert config.MODEL_WEATHER_VARIABLES[0] not in features.feature_columns(f, include_weather=False)

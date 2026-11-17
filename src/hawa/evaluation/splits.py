@@ -48,3 +48,18 @@ def split_mask(index, split, scope="winter"):
         lo, hi = config.VALIDATION_ALL
         return (local >= pd.Timestamp(lo)) & (local < pd.Timestamp(hi))
     return local >= pd.Timestamp(config.TEST_ALL_START)
+
+
+def walk_forward_masks(index, winter_year):
+    """(train_mask, eval_mask) for one walk-forward fold.
+
+    eval  = origins of winter `winter_year` (Dec-Feb, local time)
+    train = every origin earlier than that winter's start minus TRAIN_GAP_H, so no training
+            target (up to 24 h ahead) reaches into the scored winter.
+    """
+    if winter_year in config.TEST_WINTERS:
+        raise ValueError(f"winter {winter_year} is a TEST winter; it cannot be used in walk-forward")
+    eval_mask = winter_start_year(index) == winter_year
+    start_local = pd.Timestamp(f"{winter_year}-12-01") - pd.Timedelta(hours=config.TRAIN_GAP_H)
+    train_mask = _local(index).tz_localize(None) < start_local
+    return train_mask, eval_mask
