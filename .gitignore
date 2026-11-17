@@ -32,6 +32,8 @@ reports/*
 
 # experiment tracking (added with MLflow later)
 mlruns/
+mlartifacts/
+mlflow.db
 
 # downloaded archives
 *.zip

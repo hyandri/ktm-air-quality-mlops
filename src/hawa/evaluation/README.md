@@ -80,6 +80,7 @@ python -m hawa.evaluation.walk_forward
 - Prints mean MAE per winter, the % gain over the best baseline, and "folds won" (how many winters the model beats the bar in).
 - A model should win in most folds, not just on average. Writes `reports/walkforward_<station>.csv`.
 - Takes about 2 minutes.
+- `--track` also writes an MLflow run (experiment `hawa-walk-forward`): model settings, per winter the MAE, the bar and the % gain, the mean gain, folds won, and the per-horizon CSV.
 
 ## Final test (`final_test.py`)
 

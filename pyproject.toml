@@ -12,6 +12,7 @@ dependencies = [
     "requests",
     "scikit-learn",
     "lightgbm",
+    "mlflow",
 ]
 
 [project.optional-dependencies]

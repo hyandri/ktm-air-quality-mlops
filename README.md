@@ -61,8 +61,10 @@ python -m hawa.evaluation.evaluate_baselines
 python -m hawa.evaluation.evaluate_models
 python -m hawa.evaluation.walk_forward
 python -m hawa.models.train
+mlflow ui --backend-store-uri sqlite:///mlflow.db   # look at the runs: http://127.0.0.1:5000
 python -m hawa.evaluation.walk_forward
 python -m hawa.models.train
+mlflow ui --backend-store-uri sqlite:///mlflow.db   # look at the runs: http://127.0.0.1:5000
 python -m hawa.analysis.sensor_scorecard --start 2025-09-01
 python -m hawa.analysis.openmeteo_probe
 ```

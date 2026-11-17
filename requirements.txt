@@ -3,6 +3,7 @@ pandas
 requests
 scikit-learn
 lightgbm
+mlflow
 
 # Dev tools ([dev] extra in pyproject.toml)
 pytest

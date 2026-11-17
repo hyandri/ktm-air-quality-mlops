@@ -50,6 +50,8 @@ Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–
 | O3 | A test checks that features built from history up to `t` equal the training features of that row | catches training/serving skew early (a risk both Claude and ChatGPT named) |
 | O4 | `train --train-until DATE` makes a frozen model | the sensor transfer test needs a model that has not seen the tested period |
 | O5 | Do not automate retraining yet. First log forecast, actual, error, horizon, model version (monitoring), then decide | a retrained model can be worse; evidence first |
+| O6 | MLflow runs in a local SQLite file (`mlflow.db`) with files in `mlartifacts/`; no server. Two experiments: `hawa-train`, `hawa-walk-forward`. Both are git-ignored | simplest setup that gives a real run history and UI; a server can come with Docker later |
+| O7 | The saved model is logged to MLflow as the whole **bundle folder**, not 24 separate MLflow models. A registry / pyfunc wrapper comes when we build serving | 24 models belong together as one version; wrapping them as one served model is a serving decision |
 
 ## Final test result (E5)
 

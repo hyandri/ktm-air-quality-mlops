@@ -28,6 +28,9 @@ RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 MODELS_DIR = PROJECT_ROOT / "models"   # saved model bundles (not in git)
+MLFLOW_DB = PROJECT_ROOT / "mlflow.db"              # MLflow run history (SQLite file, not in git)
+MLFLOW_ARTIFACT_DIR = PROJECT_ROOT / "mlartifacts"  # files MLflow stores per run (not in git)
+MLFLOW_TRACKING_URI = f"sqlite:///{MLFLOW_DB}"
 PROCESSED_DIR = DATA_DIR / "processed"
 
 OPENAQ_RAW = RAW_DIR / "openaq"
