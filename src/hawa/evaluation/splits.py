@@ -63,3 +63,20 @@ def walk_forward_masks(index, winter_year):
     start_local = pd.Timestamp(f"{winter_year}-12-01") - pd.Timedelta(hours=config.TRAIN_GAP_H)
     train_mask = _local(index).tz_localize(None) < start_local
     return train_mask, eval_mask
+
+
+def test_masks(index, eval_winter, train_until_winter):
+    """(train_mask, eval_mask) for the FINAL test. Only winters in config.TEST_WINTERS can be scored.
+
+    eval  = origins of test winter `eval_winter`
+    train = every origin before the start of winter `train_until_winter` minus TRAIN_GAP_H.
+            train_until_winter may be earlier than eval_winter: that is a model "frozen" at that date.
+    """
+    if eval_winter not in config.TEST_WINTERS:
+        raise ValueError(f"{eval_winter} is not a test winter {config.TEST_WINTERS}")
+    if train_until_winter > eval_winter:
+        raise ValueError("training must end at or before the scored winter")
+    eval_mask = winter_start_year(index) == eval_winter
+    start_local = pd.Timestamp(f"{train_until_winter}-12-01") - pd.Timedelta(hours=config.TRAIN_GAP_H)
+    train_mask = _local(index).tz_localize(None) < start_local
+    return train_mask, eval_mask

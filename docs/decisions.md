@@ -23,6 +23,7 @@ Numbers are mean MAE over 24 horizons (µg/m³), Embassy, validation winter 2023
 | E2 | Winter 2022/23 is skipped | Embassy has 1 usable row there |
 | E3 | The bar to beat is the better of persistence and same-hour-yesterday, per horizon | `evaluation/README.md` |
 | E4 | Compare models with walk-forward over 4 winters (2019/20, 2020/21, 2021/22, 2023/24), not one | winters differ a lot (copy-yesterday error 13.5 – 26) |
+| E5 | Final test protocol: run `final_test.py --final` once, with settings frozen in `config.py`. Two models: `frozen` (trained before winter 2024, scored on 2024/25 and 2025/26) and `retrained` (trained before winter 2025, scored on 2025/26). No model changes after seeing the numbers; record them here first | an honest, never-seen score. Frozen vs retrained also shows what yearly retraining is worth |
 
 ## Modelling experiments
 

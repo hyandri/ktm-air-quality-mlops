@@ -106,3 +106,26 @@ def test_walk_forward_refuses_test_winters_and_config_has_none():
         with pytest.raises(ValueError):
             splits.walk_forward_masks(idx, y)
     assert not set(config.WALK_FORWARD_WINTERS) & set(config.TEST_WINTERS)
+
+
+# ------------------------------------------------------------------ final test
+def test_test_masks_no_leak_and_only_test_winters():
+    idx = pd.date_range("2017-03-01", "2026-06-01", freq="h", tz="UTC")
+    for ew, tu in ((2024, 2024), (2025, 2024), (2025, 2025)):
+        tr, ev = splits.test_masks(idx, ew, tu)
+        assert tr.any() and ev.any() and not (tr & ev).any()
+        assert idx[tr].max() + pd.Timedelta(hours=24) < idx[ev].min()
+        assert (splits.winter_start_year(idx[ev]) == ew).all()
+    frozen_tr, _ = splits.test_masks(idx, 2025, 2024)
+    retrained_tr, _ = splits.test_masks(idx, 2025, 2025)
+    assert retrained_tr.sum() > frozen_tr.sum()                     # retrained sees one more year
+    with pytest.raises(ValueError):
+        splits.test_masks(idx, 2023, 2023)                          # validation winter is not a test winter
+    with pytest.raises(ValueError):
+        splits.test_masks(idx, 2024, 2025)                          # cannot train after the scored winter
+
+
+def test_final_test_needs_the_final_flag():
+    from hawa.evaluation import final_test
+    with pytest.raises(SystemExit):
+        final_test.main([])

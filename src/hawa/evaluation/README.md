@@ -80,3 +80,18 @@ python -m hawa.evaluation.walk_forward
 - Prints mean MAE per winter, the % gain over the best baseline, and "folds won" (how many winters the model beats the bar in).
 - A model should win in most folds, not just on average. Writes `reports/walkforward_<station>.csv`.
 - Takes about 2 minutes.
+
+## Final test (`final_test.py`)
+
+```
+python -m hawa.evaluation.final_test --final
+```
+
+Scores the locked test winters 2024/25 and 2025/26. It refuses to run without `--final`. **Run it once**, after every choice is made, and do not change the model afterwards.
+
+| Model | Trained on | Scored on |
+|---|---|---|
+| `frozen` | everything before winter 2024 (minus 24 h) | 2024/25 and 2025/26 (a model deployed in Dec 2024 and never retrained) |
+| `retrained` | everything before winter 2025 (minus 24 h) | 2025/26 (the same system retrained once a year) |
+
+Same baselines, same rows for every model. Prints mean MAE per winter, the % gain over the best baseline, and the gain at h1, 3, 6, 12, 18, 24. Writes `reports/final_test_<station>.csv`. `splits.test_masks` allows only test winters and checks that training never reaches into the scored winter.
