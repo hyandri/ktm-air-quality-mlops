@@ -90,7 +90,7 @@ Output: `data/processed/<station>_dataset_<weather>.csv`. The command prints row
 Rules this file follows:
 - **Nothing is filled or interpolated.** A missing hour stays empty; models and splits decide what to do with it.
 - **No future information in features.** Only targets look forward. `tests/test_build_dataset.py` checks that changing a future PM2.5 value does not change an earlier row's features.
-- **Weather is the value for hour `t` itself.** Future weather (the forecast for `t+1 ... t+24`) is not in the table yet. Whether to add it is a modelling decision for Stage 1.
+- **Weather is the value for hour `t` itself.** Future weather (`t+1 ... t+24`) was tested as a model input (M8) and removed.
 - **Alignment note:** PM2.5 is the average over the hour starting at `t`; Open-Meteo instant values are at time `t`, and `precipitation` is the sum of the hour before `t`. We do not shift them. This small offset is accepted for now.
 
 Functions: `read_pm25`, `read_weather`, `choose_weather`, `add_time_features`, `add_targets`, `build`, `report`.
@@ -119,11 +119,11 @@ Adds what the model learns from: the recent history of PM2.5. Every feature at r
 - `pm25` (raw) and the targets `y_h01 ... y_h24` are **never** filled.
 - On the Embassy this rescues about 4,200 hours (PM2.5 available 71.3% → 76.4%).
 
-`feature_columns(df)` lists the columns a model may use as inputs (34 now: 10 weather, 8 time, 16 PM2.5 history). It excludes raw `pm25`, `weather_source` and all targets. `feature_columns(df, include_weather=False)` also drops the weather columns.
+`feature_columns(df)` lists the columns a model may use as inputs (24: 8 time, 16 PM2.5 history). It excludes raw `pm25`, `weather_source`, the 10 weather columns and all targets. The weather columns stay in the table, but models do not use them (`docs/decisions.md`, M3 and M8).
 
 Constants are in `config.py`: `FILL_LIMIT_H`, `LAG_HOURS`, `ROLL_WINDOWS`.
 
-Not included yet: future weather (the forecast for `t+1 ... t+24`) and weather lags. We add them as experiments, so we can measure whether they help.
+Weather (current hour and future) was tested and gave at most about 1%, so it is not a model input.
 
 ### Next in this folder (planned)
 

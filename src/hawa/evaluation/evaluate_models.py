@@ -2,14 +2,13 @@
 
 Run from the project root:
     python -m hawa.evaluation.evaluate_models
-    python -m hawa.evaluation.evaluate_models --feature-set no-weather   # "does weather help?"
 
 Training data: every origin before 2022-12-01 (all seasons). Scoring: validation winter 2023/24,
 on the same rows for every model. The TEST winters are not used here. Settings are not tuned yet.
 For a fairer judgement over several winters use walk_forward.py.
 
 Needs:  data/processed/<station>_features_<weather>.csv  (hawa.processing.features)
-Writes: reports/models_<station>_validation[_noweather].csv
+Writes: reports/models_<station>_validation.csv
 """
 import argparse
 
@@ -25,12 +24,10 @@ def main(argv=None):
     p.add_argument("--station", default="embassy")
     p.add_argument("--weather", default="auto")
     p.add_argument("--dataset", help="explicit features file")
-    p.add_argument("--feature-set", choices=["all", "no-weather"], default="all")
     a = p.parse_args(argv)
 
     df = load_dataset(a.dataset or config.PROCESSED_DIR / f"{a.station}_features_{a.weather}.csv")
-    cols = feature_columns(df, include_weather=a.feature_set == "all")
-    tag = "_noweather" if a.feature_set == "no-weather" else ""
+    cols = feature_columns(df)
     train_mask = splits.split_mask(df.index, "train", "all")
     val_index = df.index[splits.split_mask(df.index, "validation", "winter")]
     print(f"{a.station} | train: {int(train_mask.sum())} origins | "
@@ -38,10 +35,10 @@ def main(argv=None):
 
     preds = {name: fn(df).loc[val_index] for name, fn in baselines.BASELINES.items()}
     print("training lightgbm (24 horizons) ...")
-    preds[f"lightgbm{tag}"] = learners.fit_predict(df, cols, train_mask, val_index)
+    preds["lightgbm"] = learners.fit_predict(df, cols, train_mask, val_index)
 
     scores = metrics.score(df.loc[val_index, metrics.target_columns()], preds)
-    out = config.REPORTS_DIR / f"models_{a.station}_validation{tag}.csv"
+    out = config.REPORTS_DIR / f"models_{a.station}_validation.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
     scores.to_csv(out, index=False)
 

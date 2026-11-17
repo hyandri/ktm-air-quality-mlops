@@ -10,12 +10,6 @@ The TEST winters (2024/25, 2025/26) are never used. Folds are listed in config.W
 
 Run from the project root:
     python -m hawa.evaluation.walk_forward
-    python -m hawa.evaluation.walk_forward --variants lightgbm_noweather,lightgbm_futureweather
-
-Variants (all LightGBM, absolute error):
-    lightgbm_noweather       no weather columns
-    lightgbm_weather         weather at the forecast origin hour t
-    lightgbm_futureweather   weather at the target hour t+h only (optimistic: see learners.py)
 
 Needs:  data/processed/<station>_features_<weather>.csv
 Writes: reports/walkforward_<station>.csv  (fold, model, horizon, n, mae, rmse)
@@ -30,23 +24,13 @@ from hawa.evaluation.evaluate_baselines import load_dataset
 from hawa.models import baselines, learners
 from hawa.processing.features import feature_columns
 
-# name -> (include weather at hour t, include weather at hour t+h)
-VARIANTS = {
-    "lightgbm_noweather": (False, False),
-    "lightgbm_weather": (True, False),
-    "lightgbm_futureweather": (False, True),
-}
 
-
-def run_fold(df, winter_year, variants):
-    """Score baselines and chosen variants on one winter. Returns the long score table."""
+def run_fold(df, winter_year, cols):
+    """Score baselines and LightGBM on one winter. Returns the long score table."""
     train_mask, eval_mask = splits.walk_forward_masks(df.index, winter_year)
     eval_index = df.index[eval_mask]
     preds = {name: fn(df).loc[eval_index] for name, fn in baselines.BASELINES.items()}
-    for v in variants:
-        now_weather, future = VARIANTS[v]
-        cols = feature_columns(df, include_weather=now_weather)
-        preds[v] = learners.fit_predict(df, cols, train_mask, eval_index, use_future_weather=future)
+    preds["lightgbm"] = learners.fit_predict(df, cols, train_mask, eval_index)
     sc = metrics.score(df.loc[eval_index, metrics.target_columns()], preds)
     sc.insert(0, "fold", f"{winter_year}/{str(winter_year + 1)[2:]}")
     print(f"  fold {winter_year}/{str(winter_year + 1)[2:]}: train origins {int(train_mask.sum())}, "
@@ -66,13 +50,12 @@ def main(argv=None):
     p.add_argument("--station", default="embassy")
     p.add_argument("--weather", default="auto")
     p.add_argument("--dataset", help="explicit features file")
-    p.add_argument("--variants", default=",".join(VARIANTS))
     a = p.parse_args(argv)
 
-    variants = a.variants.split(",")
     df = load_dataset(a.dataset or config.PROCESSED_DIR / f"{a.station}_features_{a.weather}.csv")
-    print(f"{a.station} | walk-forward over winters {config.WALK_FORWARD_WINTERS} | variants: {variants}")
-    all_scores = pd.concat([run_fold(df, y, variants) for y in config.WALK_FORWARD_WINTERS],
+    cols = feature_columns(df)
+    print(f"{a.station} | walk-forward over winters {config.WALK_FORWARD_WINTERS}")
+    all_scores = pd.concat([run_fold(df, y, cols) for y in config.WALK_FORWARD_WINTERS],
                            ignore_index=True)
 
     out = config.REPORTS_DIR / f"walkforward_{a.station}.csv"
@@ -83,7 +66,7 @@ def main(argv=None):
     t = fold_table(all_scores, base)
     print("\nMean MAE over 24 horizons, per scored winter (ug/m3):\n")
     print(t.round(2).to_string())
-    gain = (100 * (1 - t[variants].div(t["best_baseline"], axis=0))).round(1)
+    gain = (100 * (1 - t[["lightgbm"]].div(t["best_baseline"], axis=0))).round(1)
     gain.loc["mean of folds"] = gain.mean().round(1)
     gain.loc["folds won"] = (gain.iloc[:-1] > 0).sum().astype(int)
     print("\n% lower MAE than the best baseline (positive = better):\n")

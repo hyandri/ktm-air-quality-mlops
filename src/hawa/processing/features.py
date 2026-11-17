@@ -52,14 +52,13 @@ def add_features(df):
     return pd.concat([df, pd.DataFrame(new, index=idx)], axis=1)
 
 
-def feature_columns(df, include_weather=True):
-    """Columns a model may use as inputs: everything except raw pm25, weather_source and targets.
+def feature_columns(df):
+    """Columns a model may use as inputs: PM2.5 history and time features.
 
-    include_weather=False also drops the weather columns (for the "does weather help?" test).
+    Raw pm25, the weather columns and the targets are excluded. Weather gave at most about 1% in
+    walk-forward tests, so models do not use it (docs/decisions.md, M3 and M8).
     """
-    skip = {"pm25", "weather_source"}
-    if not include_weather:
-        skip |= set(config.MODEL_WEATHER_VARIABLES)
+    skip = {"pm25", "weather_source"} | set(config.MODEL_WEATHER_VARIABLES)
     return [c for c in df.columns if c not in skip and not c.startswith("y_h")]
 
 

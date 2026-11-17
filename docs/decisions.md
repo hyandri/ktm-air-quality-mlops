@@ -32,17 +32,17 @@ Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–
 |---|---|---|---|
 | M1 | Train on winters only, or all seasons? | LightGBM 18.4 vs 17.6; Ridge 18.7 vs 17.4 (all seasons better) | **train on all seasons.** Winter-only option removed |
 | M2 | Does the loss matter? | LightGBM squared error 17.6 → absolute error (L1) 15.9 | **L1 is the loss** (it matches the MAE score). `objective="l1"` is now fixed in `config.LIGHTGBM_PARAMS` |
-| M3 | Does weather (value at the origin hour) help? | Single winter: 15.94 with and without. Walk-forward: mean MAE difference per winter +0.21, −0.08, −0.27, −0.02 (weather better in 10, 13, 23, 14 of 24 horizons) | **no measurable gain.** The switch stays as an option because future-weather features (M8) reuse it; remove if M8 also fails |
+| M3 | Does weather (value at the origin hour) help? | Single winter: 15.94 with and without. Walk-forward: mean MAE difference per winter +0.21, −0.08, −0.27, −0.02 (weather better in 10, 13, 23, 14 of 24 horizons) | **no measurable gain.** Weather removed from model inputs (see M8) |
 | M4 | Ridge vs LightGBM | Single winter: Ridge 17.4, LightGBM L1 15.9. Walk-forward: Ridge beat the bar in 1 of 4 winters (mean −1.8%) | **Ridge removed** (code, `RIDGE_ALPHA`, `LINEAR_EXCLUDE`, its tests) |
 | M5 | Best model vs the bar (16.2) on 2023/24 | LightGBM L1 +0.5% | one winter is too fragile: use walk-forward (E4) |
 | M6 | LightGBM L1 vs the bar, walk-forward | Beats the bar in 4 of 4 winters. Mean gain +12.5% (no weather), +12.7% (weather). All 24 horizons won in 2019/20, 2020/21, 2021/22; only 15 (no weather) / 13 (weather) of 24 in 2023/24 | **LightGBM L1 is the current model** |
 | M7 | Where is it strong or weak? | Strong at h1–6 in every winter (2021/22: 13.4 vs 18.2). In 2023/24 it loses to the bar at h=7 and h=14–21. The baseline was also much better that winter (h1–6: 15.3 vs 18–25 in the other winters) | long horizons are the weak spot. Earlier idea "calm winters are easier" was **not supported**: 2021/22 is equally calm and gained ~19% |
-| M8 | Does future weather (weather at t+h, `fut_*`) help? Walk-forward, optimistic test | Mean gain over the bar: 13.5% vs 12.5% (no weather) and 12.7% (weather at t). Gain in MAE per winter: 0.37, 0.35, 0.18, 0.04 µg/m³ (about 1%). Better in all 4 winters, but small. In 2023/24 it does not fix the weak horizons (h14–16 worse than no weather) | **small gain, upper bound only.** A real forecast has errors, so the true gain is likely smaller. Not adopted now; see cleanup gate |
+| M8 | Does future weather (weather at t+h, `fut_*`) help? Walk-forward, optimistic test | Mean gain over the bar: 13.5% vs 12.5% (no weather) and 12.7% (weather at t). Gain in MAE per winter: 0.37, 0.35, 0.18, 0.04 µg/m³ (about 1%). Better in all 4 winters, but small. In 2023/24 it does not fix the weak horizons (h14–16 worse than no weather) | **small gain, upper bound only.** A real forecast has errors, so the true gain is likely smaller. **Weather removed from the models** (decision: not worth the complexity) |
 
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?
-- Does the ERA5 / forecast-weather mix in training hurt? (Weather is archived forecasts from 2021, ERA5 before.)
+- Weather was tested only on winters (Dec–Feb, dry). Does it matter in other seasons (pre-monsoon smoke, monsoon rain)? Test when we add whole-year tables.
 - Tuning of LightGBM settings: not done.
 - Sin/cos calendar features were made for Ridge. Trees do not need them: check if they can go.
 
@@ -51,6 +51,7 @@ Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–
 Remove code that lost its experiment, and record it above.
 
 **Done (stage 1 → 2):**
+- weather as model input: `--feature-set` switch, `include_weather`, `fut_*` future-weather columns, weather walk-forward variants (M3, M8). Kept: the weather download and the weather columns in the dataset table, so weather can be added back without re-downloading. Results: M3, M8 above
 - Ridge learner, its settings and tests (M4)
 - `--train-scope winter` in `evaluate_models.py` (M1)
 - `--objective` switch and the squared-error LightGBM default (M2)
@@ -59,7 +60,6 @@ Remove code that lost its experiment, and record it above.
 - old result files in `reports/` (they carry removed model names) and `data/raw/openaq/scorecard.csv` (old, wrong)
 
 **Kept on purpose:**
-- the weather switches (used by M8)
 - the `previous_runs` URL in `ingestion/openmeteo.py`: it is used by `analysis/openmeteo_probe.py`
 
-**Next gate candidates:** all weather options (M3 and M8 gave at most about 1%) if we decide not to use weather; sin/cos calendar features if trees do not need them.
+**Next gate candidates:** the weather download and dataset join (nothing uses them now); sin/cos calendar features if trees do not need them.

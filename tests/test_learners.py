@@ -51,27 +51,3 @@ def test_improvement_vs_best_baseline():
     r = metrics.improvement_vs_best_baseline(sc, ["b1", "b2"], horizons=(1,))
     assert r.loc["m", "h01"] == 20.0                        # (10-8)/10
 
-
-def test_future_weather_is_the_value_at_t_plus_h():
-    idx = pd.date_range("2022-01-01", periods=5, freq="h", tz="UTC")
-    df = pd.DataFrame({"temperature_2m": [1.0, 2.0, 3.0, 4.0, 5.0]}, index=idx)
-    f = learners.future_weather(df, 2)
-    assert list(f.columns) == ["fut_temperature_2m"]
-    assert f["fut_temperature_2m"].iloc[0] == 3.0          # row t=0 gets the value of t+2
-    assert f["fut_temperature_2m"].iloc[:3].tolist() == [3.0, 4.0, 5.0]
-    assert f["fut_temperature_2m"].iloc[3:].isna().all()   # no value beyond the end
-
-
-def test_future_weather_columns_help_when_target_depends_on_them():
-    rng = np.random.default_rng(1)
-    n = 900
-    idx = pd.date_range("2022-01-01", periods=n, freq="h", tz="UTC")
-    w = rng.uniform(0, 100, n)
-    df = pd.DataFrame({"f1": rng.uniform(0, 100, n), "temperature_2m": w}, index=idx)
-    df["y_h01"] = pd.Series(w, index=idx).shift(-1)         # target = weather one hour ahead
-    train = np.arange(n) < 600
-    pred_idx = df.index[600:-1]
-    plain = learners.fit_predict(df, ["f1"], train, pred_idx, horizons=1)
-    fut = learners.fit_predict(df, ["f1"], train, pred_idx, horizons=1, use_future_weather=True)
-    err = lambda p: (p["y_h01"] - df.loc[pred_idx, "y_h01"]).abs().mean()
-    assert err(fut) < err(plain) / 2

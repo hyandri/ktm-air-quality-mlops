@@ -52,15 +52,13 @@ Options: `--station`, `--weather`, `--dataset`.
 
 ```
 python -m hawa.evaluation.evaluate_models
-python -m hawa.evaluation.evaluate_models --feature-set no-weather
 ```
 
 - **Training data:** every origin before 2022-12-01 (all seasons). Winter-only training was removed because it was worse (`docs/decisions.md`, M1).
 - **Scoring:** validation winter 2023/24, same rows for every model (baselines included).
 - **The test winters are never used here.** Only validation, until we decide the final model.
-- `--feature-set no-weather` drops the 10 weather columns ("does weather help?"). The result file gets the suffix `_noweather`.
 - Prints the MAE table and the "% lower MAE than the best baseline at that horizon" table (`metrics.improvement_vs_best_baseline`). Positive = better than the bar.
-- Writes `reports/models_<station>_validation[_noweather].csv`.
+- Writes `reports/models_<station>_validation.csv`.
 - Needs `data/processed/<station>_features_<weather>.csv` (from `hawa.processing.features`).
 
 ## Walk-forward (`walk_forward.py`)
@@ -76,14 +74,12 @@ One validation winter is a fragile judge: winters differ a lot (mean PM2.5 from 
 
 ```
 python -m hawa.evaluation.walk_forward
-python -m hawa.evaluation.walk_forward --variants lightgbm_noweather,lightgbm_futureweather
 ```
 
 - Folds are in `config.WALK_FORWARD_WINTERS`. **2017 and 2018 are skipped** (too little earlier data), 2022 has no data, and **the test winters are refused** by `splits.walk_forward_masks`.
-- Variants are listed in `VARIANTS` at the top of the file: `lightgbm_noweather`, `lightgbm_weather` (weather at the origin hour), `lightgbm_futureweather` (weather at the target hour `t+h`, an optimistic test).
 - Prints mean MAE per winter, the % gain over the best baseline, and "folds won" (how many winters the model beats the bar in).
 - A model should win in most folds, not just on average. Writes `reports/walkforward_<station>.csv`.
-- Takes about 5 minutes with 3 variants.
+- Takes about 2 minutes.
 
 ## Adding a model to the comparison
 

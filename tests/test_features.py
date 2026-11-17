@@ -52,10 +52,11 @@ def test_irregular_grid_rejected():
         features.add_features(d)
 
 
-def test_feature_columns_can_drop_weather():
+def test_feature_columns_exclude_weather_pm25_and_targets():
     from hawa import config
     df = _df(list(range(30)))
     df[config.MODEL_WEATHER_VARIABLES[0]] = 1.0
-    f = features.add_features(df)
-    assert config.MODEL_WEATHER_VARIABLES[0] in features.feature_columns(f)
-    assert config.MODEL_WEATHER_VARIABLES[0] not in features.feature_columns(f, include_weather=False)
+    df["y_h01"] = 1.0
+    cols = features.feature_columns(features.add_features(df))
+    assert config.MODEL_WEATHER_VARIABLES[0] not in cols
+    assert "pm25" not in cols and "y_h01" not in cols and "pm25_filled" in cols

@@ -1,7 +1,7 @@
 # Hawa (AQI-MLOPS)
 
 Hourly PM2.5 forecasting for Kathmandu (24 h ahead) with an MLOps pipeline.
-Current stage: **Stage 1 – baselines scored on validation; weather and ML models next.**
+Current stage: **Stage 1 – baselines and LightGBM scored with walk-forward; tuning and final test next.**
 
 ## Layout
 
