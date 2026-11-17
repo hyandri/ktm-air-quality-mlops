@@ -15,6 +15,8 @@ src/hawa/
 ├── config.py       paths, coordinates, weather variable list, cleaning constants
 ├── ingestion/      fetch RAW data from APIs. Does not change values.
 ├── processing/     change data: cleaning, joining, features
+├── models/         forecasting models (baselines now; Ridge, LightGBM later)
+├── evaluation/     time-based splits, metrics, scoring
 └── analysis/       one-off checks that report numbers, to guide decisions
 ```
 
@@ -28,6 +30,8 @@ Docs per folder (add a new README when you add a new folder):
 |---|---|
 | `ingestion/` | [ingestion/README.md](hawa/ingestion/README.md) |
 | `processing/` | [processing/README.md](hawa/processing/README.md) |
+| `models/` | [models/README.md](hawa/models/README.md) |
+| `evaluation/` | [evaluation/README.md](hawa/evaluation/README.md) |
 | `analysis/` | [analysis/README.md](hawa/analysis/README.md) |
 
 Data files and their meaning: [`data/README.md`](../data/README.md).
@@ -45,6 +49,10 @@ One place for things several modules need. Change them here, not inside modules.
 | `OPENAQ_PM25_PARAMETER_ID` | `2` (PM2.5 in OpenAQ) |
 | `WEATHER_VARIABLES` | the 11 candidate weather variables |
 | `ERROR_VALUES`, `FLAT_RUN_HOURS` | cleaning constants (`985`, `12`) |
+| `MODEL_WEATHER_VARIABLES`, `FORECAST_WEATHER_START` | weather columns used in models; date from which archived forecasts are used |
+| `HORIZONS`, `LOCAL_UTC_OFFSET_H` | 24 forecast hours; Kathmandu offset 5.75 h |
+| `WINTER_MONTHS`, `TRAIN_WINTERS`, `VALIDATION_WINTERS`, `TEST_WINTERS`, `TRAIN_ALL_END`, `VALIDATION_ALL`, `TEST_ALL_START` | split definitions (see `evaluation/README.md`) |
+| `REPORTS_DIR` | `reports/`: result tables from evaluation scripts |
 
 `config.py` also reads a `.env` file in the project root (lines like `OPENAQ_API_KEY=...`).
 Real environment variables win over `.env`. Never commit `.env` or paste the key in chat.

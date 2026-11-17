@@ -106,6 +106,10 @@ These sensors started in late 2025, so each has about one winter of history. Low
 - **Valid hours only.** Build a full hourly grid before making features.
 - **Rebuild:** `python -m hawa.processing.clean` (see `src/hawa/processing/README.md` for the rules).
 
+| File (made by `build_dataset.py`) | What |
+|---|---|
+| `<station>_dataset_<weather>.csv` | one row per hour: PM2.5, weather, time features and targets `y_h01..y_h24`. See `src/hawa/processing/README.md` |
+
 ### Winter coverage (Dec–Feb, share of hours with a valid value)
 
 | Winter | Embassy | Phora |

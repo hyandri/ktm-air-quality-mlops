@@ -26,6 +26,7 @@ _load_dotenv(PROJECT_ROOT / ".env")
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
+REPORTS_DIR = PROJECT_ROOT / "reports"
 PROCESSED_DIR = DATA_DIR / "processed"
 
 OPENAQ_RAW = RAW_DIR / "openaq"
@@ -53,6 +54,30 @@ WEATHER_VARIABLES = [
     "boundary_layer_height",
 ]
 
+# Variables used in the first models. Boundary layer height is left out because the
+# archived forecasts miss most of it (see data/README.md).
+MODEL_WEATHER_VARIABLES = [v for v in WEATHER_VARIABLES if v != "boundary_layer_height"]
+# Archived forecasts (what a live model would have seen) exist from this date;
+# before it only ERA5 is available.
+FORECAST_WEATHER_START = "2021-01-01"
+
+# ------------------------------------------------------------------- dataset
+HORIZONS = 24             # forecast 1..24 hours ahead
+LOCAL_UTC_OFFSET_H = 5.75  # Kathmandu = UTC+05:45
+
 # -------------------------------------------------------------- cleaning rules
 ERROR_VALUES = {985.0}  # seen in the AirNow-derived data; treated as an error code
 FLAT_RUN_HOURS = 12     # this many identical values in a row = stuck sensor
+
+# ----------------------------------------------------------- evaluation splits
+# A winter is named by the year it STARTS: 2023 = Dec 2023 - Feb 2024 (Kathmandu local time).
+# Winter 2022/23 is skipped: the Embassy has almost no data then.
+WINTER_MONTHS = (12, 1, 2)
+TRAIN_WINTERS = (2017, 2018, 2019, 2020, 2021)
+VALIDATION_WINTERS = (2023,)
+TEST_WINTERS = (2024, 2025)
+# Whole-year scope (used later): train = all seasons before 2022-12-01,
+# validation = 2023-12-01 .. 2024-11-30, test = from 2024-12-01 (all local time).
+TRAIN_ALL_END = "2022-12-01"
+VALIDATION_ALL = ("2023-12-01", "2024-12-01")
+TEST_ALL_START = "2024-12-01"
