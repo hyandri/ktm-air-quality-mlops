@@ -52,6 +52,7 @@ Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–
 | O5 | Do not automate retraining yet. First log forecast, actual, error, horizon, model version (monitoring), then decide | a retrained model can be worse; evidence first |
 | O6 | MLflow runs in a local SQLite file (`mlflow.db`) with files in `mlartifacts/`; no server. Two experiments: `hawa-train`, `hawa-walk-forward`. Both are git-ignored | simplest setup that gives a real run history and UI; a server can come with Docker later |
 | O7 | The saved model is logged to MLflow as the whole **bundle folder**, not 24 separate MLflow models. A registry / pyfunc wrapper comes when we build serving | 24 models belong together as one version; wrapping them as one served model is a serving decision |
+| O8 | Sensor transfer test: the frozen model (trained before 2024-12-01) is scored on each AirGradient sensor's own history for winter 2025/26, against the same two baselines, plus agreement with the Embassy (`analysis/sensor_transfer.py`). Result: _to be filled after the run_ | the model was trained on the Embassy but the product reads other sensors; this decides if live forecasting is credible |
 
 ## Final test result (E5)
 
