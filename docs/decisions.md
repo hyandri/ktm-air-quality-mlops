@@ -38,9 +38,21 @@ Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6, M
 | M6 | LightGBM L1 vs the bar, walk-forward | Beats the bar in 4 of 4 winters. Mean gain +12.5% (no weather), +12.7% (weather). All 24 horizons won in 2019/20, 2020/21, 2021/22; only 15 (no weather) / 13 (weather) of 24 in 2023/24 | **LightGBM L1 is the current model** |
 | M7 | Where is it strong or weak? | Strong at h1–6 in every winter (2021/22: 13.4 vs 18.2). In 2023/24 it loses to the bar at h=7 and h=14–21. The baseline was also much better that winter (h1–6: 15.3 vs 18–25 in the other winters) | long horizons are the weak spot. Earlier idea "calm winters are easier" was **not supported**: 2021/22 is equally calm and gained ~19% |
 
+## Experiment in progress
+
+**M8: future weather.** For horizon h the model also gets the weather at hour t+h (`fut_*` columns,
+`learners.future_weather`). Variant `lightgbm_futureweather` (no current-hour weather) is compared with
+`lightgbm_noweather` in walk-forward.
+- This is an **optimistic upper bound**: the archived weather is close to what really happened, but a real
+  forecast made at hour t has errors. Hourly "Historical Forecast" values are not true 1–24 h-ahead forecasts.
+- If there is **no gain even here**, drop weather as a direction (and remove the switches at the next gate).
+- If there is a gain, the next step is to test with true lead-time forecasts (Open-Meteo Previous Runs API,
+  only from Feb 2024), which is a fair but short test.
+- Result: _to be filled after the run._
+
 ## Open questions
 
-- M8: future weather (forecast for t+1 … t+24) as features: not tried yet. Next experiment.
+- M8: future weather as features: built, **result pending** (see below).
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?
 - Does the ERA5 / forecast-weather mix in training hurt? (Weather is archived forecasts from 2021, ERA5 before.)
 - Tuning of LightGBM settings: not done.

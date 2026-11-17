@@ -76,14 +76,14 @@ One validation winter is a fragile judge: winters differ a lot (mean PM2.5 from 
 
 ```
 python -m hawa.evaluation.walk_forward
-python -m hawa.evaluation.walk_forward --variants lightgbm_noweather,lightgbm_weather
+python -m hawa.evaluation.walk_forward --variants lightgbm_noweather,lightgbm_futureweather
 ```
 
 - Folds are in `config.WALK_FORWARD_WINTERS`. **2017 and 2018 are skipped** (too little earlier data), 2022 has no data, and **the test winters are refused** by `splits.walk_forward_masks`.
-- Variants (LightGBM, with or without weather) are listed in `VARIANTS` at the top of the file.
+- Variants are listed in `VARIANTS` at the top of the file: `lightgbm_noweather`, `lightgbm_weather` (weather at the origin hour), `lightgbm_futureweather` (weather at the target hour `t+h`, an optimistic test).
 - Prints mean MAE per winter, the % gain over the best baseline, and "folds won" (how many winters the model beats the bar in).
 - A model should win in most folds, not just on average. Writes `reports/walkforward_<station>.csv`.
-- Takes about 3 minutes.
+- Takes about 5 minutes with 3 variants.
 
 ## Adding a model to the comparison
 

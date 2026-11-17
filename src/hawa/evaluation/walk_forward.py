@@ -10,11 +10,12 @@ The TEST winters (2024/25, 2025/26) are never used. Folds are listed in config.W
 
 Run from the project root:
     python -m hawa.evaluation.walk_forward
-    python -m hawa.evaluation.walk_forward --variants lightgbm_noweather,lightgbm_weather
+    python -m hawa.evaluation.walk_forward --variants lightgbm_noweather,lightgbm_futureweather
 
 Variants (all LightGBM, absolute error):
-    lightgbm_noweather    no weather columns
-    lightgbm_weather      with weather columns (value at the forecast origin hour)
+    lightgbm_noweather       no weather columns
+    lightgbm_weather         weather at the forecast origin hour t
+    lightgbm_futureweather   weather at the target hour t+h only (optimistic: see learners.py)
 
 Needs:  data/processed/<station>_features_<weather>.csv
 Writes: reports/walkforward_<station>.csv  (fold, model, horizon, n, mae, rmse)
@@ -29,10 +30,11 @@ from hawa.evaluation.evaluate_baselines import load_dataset
 from hawa.models import baselines, learners
 from hawa.processing.features import feature_columns
 
-# name -> include weather columns
+# name -> (include weather at hour t, include weather at hour t+h)
 VARIANTS = {
-    "lightgbm_noweather": False,
-    "lightgbm_weather": True,
+    "lightgbm_noweather": (False, False),
+    "lightgbm_weather": (True, False),
+    "lightgbm_futureweather": (False, True),
 }
 
 
@@ -42,8 +44,9 @@ def run_fold(df, winter_year, variants):
     eval_index = df.index[eval_mask]
     preds = {name: fn(df).loc[eval_index] for name, fn in baselines.BASELINES.items()}
     for v in variants:
-        cols = feature_columns(df, include_weather=VARIANTS[v])
-        preds[v] = learners.fit_predict(df, cols, train_mask, eval_index)
+        now_weather, future = VARIANTS[v]
+        cols = feature_columns(df, include_weather=now_weather)
+        preds[v] = learners.fit_predict(df, cols, train_mask, eval_index, use_future_weather=future)
     sc = metrics.score(df.loc[eval_index, metrics.target_columns()], preds)
     sc.insert(0, "fold", f"{winter_year}/{str(winter_year + 1)[2:]}")
     print(f"  fold {winter_year}/{str(winter_year + 1)[2:]}: train origins {int(train_mask.sum())}, "

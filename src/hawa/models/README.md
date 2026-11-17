@@ -28,10 +28,11 @@ Registry: `BASELINES = {name: function}`. The dataset must be on a regular hourl
 
 Model: LightGBM, gradient-boosted trees (settings in `config.LIGHTGBM_PARAMS`). It handles missing inputs by itself. Loss is absolute error (`objective="l1"`), which matches the MAE score. Ridge and the squared-error loss were removed after they lost (see `docs/decisions.md`, M2, M4, M6).
 
+- `use_future_weather=True` (experiment M8) adds `fut_<weather>` columns: the weather at hour `t+h` for the horizon-`h` model. Optimistic, because archived weather has no forecast error. See the docstring in `learners.py`.
 - Training rows must have a real target for that horizon. Inputs may have gaps.
 - Predictions are clipped at 0 (PM2.5 cannot be negative).
 - **Nothing is tuned yet.** Settings are reasonable defaults, fixed before looking at results. The random seed is `config.RANDOM_SEED`.
-- Functions: `make_model()`, `fit_predict(df, feature_cols, train_mask, predict_index, horizons)`.
+- Functions: `make_model()`, `future_weather(df, h)`, `fit_predict(df, feature_cols, train_mask, predict_index, horizons, use_future_weather)`.
 - Tests (`tests/test_learners.py`): the models learn a simple pattern, training uses only the masked rows (rows outside the mask never influence it), predictions are never negative.
 
 ### Planned here
