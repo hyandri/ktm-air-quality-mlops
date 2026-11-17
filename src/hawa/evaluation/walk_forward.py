@@ -25,17 +25,12 @@ from hawa.models import baselines, learners
 from hawa.processing.features import feature_columns
 
 
-def run_fold(df, winter_year, cols, models=None):
-    """Score baselines and LightGBM on one winter. Returns the long score table.
-
-    `models` maps a name to LightGBM setting overrides (default: one model "lightgbm", base settings).
-    """
-    models = models or {"lightgbm": None}
+def run_fold(df, winter_year, cols):
+    """Score baselines and LightGBM on one winter. Returns the long score table."""
     train_mask, eval_mask = splits.walk_forward_masks(df.index, winter_year)
     eval_index = df.index[eval_mask]
     preds = {name: fn(df).loc[eval_index] for name, fn in baselines.BASELINES.items()}
-    for name, params in models.items():
-        preds[name] = learners.fit_predict(df, cols, train_mask, eval_index, params=params)
+    preds["lightgbm"] = learners.fit_predict(df, cols, train_mask, eval_index)
     sc = metrics.score(df.loc[eval_index, metrics.target_columns()], preds)
     sc.insert(0, "fold", f"{winter_year}/{str(winter_year + 1)[2:]}")
     print(f"  fold {winter_year}/{str(winter_year + 1)[2:]}: train origins {int(train_mask.sum())}, "

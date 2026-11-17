@@ -30,8 +30,8 @@ Model: LightGBM, gradient-boosted trees (settings in `config.LIGHTGBM_PARAMS`). 
 
 - Training rows must have a real target for that horizon. Inputs may have gaps.
 - Predictions are clipped at 0 (PM2.5 cannot be negative).
-- **Nothing is tuned yet.** Settings are reasonable defaults, fixed before looking at results. The random seed is `config.RANDOM_SEED`.
-- Functions: `make_model(params)`, `fit_predict(df, feature_cols, train_mask, predict_index, horizons, params)`. `params` overrides single LightGBM settings (used by `evaluation/tune.py`).
+- Settings were checked in one small tuning test (6 settings, walk-forward; `docs/decisions.md`, M9). The random seed is `config.RANDOM_SEED`.
+- Functions: `make_model()`, `fit_predict(df, feature_cols, train_mask, predict_index, horizons)`.
 - Tests (`tests/test_learners.py`): the models learn a simple pattern, training uses only the masked rows (rows outside the mask never influence it), predictions are never negative.
 
 ### Planned here

@@ -4,7 +4,7 @@ Run from the project root:
     python -m hawa.evaluation.evaluate_models
 
 Training data: every origin before 2022-12-01 (all seasons). Scoring: validation winter 2023/24,
-on the same rows for every model. The TEST winters are not used here. Settings are not tuned yet.
+on the same rows for every model. The TEST winters are not used here. Settings: see config.LIGHTGBM_PARAMS.
 For a fairer judgement over several winters use walk_forward.py.
 
 Needs:  data/processed/<station>_features_<weather>.csv  (hawa.processing.features)

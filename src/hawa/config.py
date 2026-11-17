@@ -89,19 +89,8 @@ ROLL_WINDOWS = (6, 24, 72, 168)       # rolling mean windows (hours, ending at t
 
 # --------------------------------------------------------------------- models
 RANDOM_SEED = 42
-LIGHTGBM_PARAMS = dict(objective="l1", n_estimators=300, learning_rate=0.05, num_leaves=31, min_child_samples=50,
+LIGHTGBM_PARAMS = dict(objective="l1", n_estimators=600, learning_rate=0.025, num_leaves=31, min_child_samples=50,
                        subsample=0.8, subsample_freq=1, colsample_bytree=0.8, verbose=-1)
-
-# Settings tried by evaluation/tune.py. Each one changes only the listed keys of LIGHTGBM_PARAMS.
-# The grid is small on purpose: every extra try is another chance to fit the 4 scored winters by luck.
-TUNING_GRID = {
-    "base": {},
-    "small_trees": dict(num_leaves=15),
-    "small_trees_strict": dict(num_leaves=15, min_child_samples=200),
-    "big_trees": dict(num_leaves=63),
-    "slow_more_trees": dict(n_estimators=600, learning_rate=0.025),
-    "fewer_columns": dict(colsample_bytree=0.5),
-}
 
 # ----------------------------------------------------------------- walk-forward
 # Each winter below is scored in turn, training on ALL data before it (expanding window).

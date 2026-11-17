@@ -26,7 +26,7 @@ Numbers are mean MAE over 24 horizons (µg/m³), Embassy, validation winter 2023
 
 ## Modelling experiments
 
-Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–M8).
+Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–M9).
 
 | # | Question | Result | Decision |
 |---|---|---|---|
@@ -38,12 +38,7 @@ Single-winter runs (M1–M5, validation 2023/24) first, then walk-forward (M6–
 | M6 | LightGBM L1 vs the bar, walk-forward | Beats the bar in 4 of 4 winters. Mean gain +12.5% (no weather), +12.7% (weather). All 24 horizons won in 2019/20, 2020/21, 2021/22; only 15 (no weather) / 13 (weather) of 24 in 2023/24 | **LightGBM L1 is the current model** |
 | M7 | Where is it strong or weak? | Strong at h1–6 in every winter (2021/22: 13.4 vs 18.2). In 2023/24 it loses to the bar at h=7 and h=14–21. The baseline was also much better that winter (h1–6: 15.3 vs 18–25 in the other winters) | long horizons are the weak spot. Earlier idea "calm winters are easier" was **not supported**: 2021/22 is equally calm and gained ~19% |
 | M8 | Does future weather (weather at t+h, `fut_*`) help? Walk-forward, optimistic test | Mean gain over the bar: 13.5% vs 12.5% (no weather) and 12.7% (weather at t). Gain in MAE per winter: 0.37, 0.35, 0.18, 0.04 µg/m³ (about 1%). Better in all 4 winters, but small. In 2023/24 it does not fix the weak horizons (h14–16 worse than no weather) | **small gain, upper bound only.** A real forecast has errors, so the true gain is likely smaller. **Weather removed from the models** (decision: not worth the complexity) |
-
-## Experiment in progress
-
-**M9: LightGBM settings.** 6 settings in `config.TUNING_GRID`, walk-forward, `evaluation/tune.py`.
-Rules fixed before the run: must win 4/4 winters, must beat `base` by ≥ 0.3 points of mean gain, simplest wins ties, otherwise keep `base`.
-Result: _to be filled after the run._
+| M9 | Do other LightGBM settings help? 6 settings, walk-forward (rules fixed before the run: win 4/4, beat base by ≥ 0.3 points, simplest wins) | Mean gain over the bar: base 12.5, small_trees 12.6, small_trees_strict 12.7, big_trees 12.3, fewer_columns 12.6, **slow_more_trees 12.9** (600 trees, learning rate 0.025). All won 4/4. Only slow_more_trees beat base by ≥ 0.3 (about 0.08 µg/m³ MAE, better in all 4 winters). 2023/24 stays weak (+3.3%) | **adopt slow_more_trees** (only one passed the rule). The gain is tiny: settings barely matter, the model has reached a plateau. `tune.py` and the grid removed |
 
 ## Open questions
 
@@ -56,6 +51,7 @@ Result: _to be filled after the run._
 Remove code that lost its experiment, and record it above.
 
 **Done (stage 1 → 2):**
+- `evaluation/tune.py`, `config.TUNING_GRID` and the `params` override (M9 finished; the code is in git history)
 - weather as model input: `--feature-set` switch, `include_weather`, `fut_*` future-weather columns, weather walk-forward variants (M3, M8). Kept: the weather download and the weather columns in the dataset table, so weather can be added back without re-downloading. Results: M3, M8 above
 - Ridge learner, its settings and tests (M4)
 - `--train-scope winter` in `evaluate_models.py` (M1)

@@ -52,15 +52,3 @@ def test_improvement_vs_best_baseline():
     assert r.loc["m", "h01"] == 20.0                        # (10-8)/10
 
 
-
-def test_params_override_only_the_given_keys():
-    m = learners.make_model({"num_leaves": 7})
-    assert m.get_params()["num_leaves"] == 7
-    assert m.get_params()["objective"] == "l1"             # others stay at the config values
-
-
-def test_tuning_grid_only_uses_known_lightgbm_keys():
-    from hawa import config
-    for name, overrides in config.TUNING_GRID.items():
-        assert set(overrides) <= set(config.LIGHTGBM_PARAMS), name
-        learners.make_model(overrides)                      # builds without error
