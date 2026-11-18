@@ -67,3 +67,13 @@ def test_evaluate_reports_broken_sensor_and_keeps_going():
 
     rows, problems = actuals.evaluate(forecasts, fetch, NOW, sensors)
     assert set(rows["sensor_id"]) == {11} and problems[0][0] == "b"
+
+
+def test_best_baseline_is_chosen_per_horizon_not_once_for_all():
+    """Persistence wins at one horizon, yesterday at another: the bar must take the better one at each."""
+    rows = pd.DataFrame({"horizon": [1, 1, 2, 2], "err_model": [4.0] * 4,
+                         "err_persistence": [2.0, 2.0, 10.0, 10.0], "err_yesterday": [8.0, 8.0, 6.0, 6.0]})
+    out = actuals.summary(rows).set_index("horizons")
+    assert out.loc["h1-h24", "mae_best_baseline"] == 4.0          # (2 + 2 + 6 + 6) / 4
+    assert out.loc["h1-h24", "mae_persistence"] == 6.0 and out.loc["h1-h24", "mae_yesterday"] == 7.0
+    assert out.loc["h1-h24", "gain_vs_best_baseline_pct"] == 0.0

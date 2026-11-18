@@ -4,6 +4,7 @@ Run from the project root:
     python -m hawa.models.train                              # train on ALL available origins
     python -m hawa.models.train --train-until 2024-12-01     # only origins before that date (minus 24 h)
     python -m hawa.models.train --no-track                   # do not write an MLflow run
+    python -m hawa.models.train --name embassy_latest        # fixed folder name (used by the DVC pipeline)
 
 `--train-until` makes a "frozen" model, like the one in the final test (before 2024-12-01), which is
 what the sensor transfer test needs (the model must not have seen the period it is tested on).
@@ -68,6 +69,8 @@ def main(argv=None):
     p.add_argument("--dataset", help="explicit features file")
     p.add_argument("--train-until", help="local date YYYY-MM-DD: train only on origins before it (minus 24 h)")
     p.add_argument("--out-dir", default=str(config.MODELS_DIR))
+    p.add_argument("--name", help="bundle folder name (default: <station>_to_<last training origin date>). "
+                                  "DVC uses a fixed name so the output path never changes.")
     p.add_argument("--no-track", action="store_true", help="do not log an MLflow run")
     a = p.parse_args(argv)
 
@@ -78,7 +81,7 @@ def main(argv=None):
     meta.update({"station": a.station, "dataset_file": path.name, "dataset_sha256": sha256_file(path)})
 
     last = pd.Timestamp(meta["train_last_origin_utc"]).strftime("%Y-%m-%d")
-    out = Path(a.out_dir) / f"{a.station}_to_{last}"
+    out = Path(a.out_dir) / (a.name or f"{a.station}_to_{last}")
     bundle.save_bundle(out, models, meta)
     print(f"train origins: {meta['n_train_origins']} ({meta['train_first_origin_utc'][:10]} .. {last})")
     print(f"features: {len(meta['feature_columns'])} | git commit: {meta['git_commit'][:8]}")

@@ -75,16 +75,23 @@ def evaluate(forecasts, fetch, now, sensors):
 
 
 def summary(rows):
-    """MAE of model / persistence / yesterday per horizon group, and the gain over the best baseline."""
+    """MAE of model / persistence / yesterday per horizon group, and the gain over the best baseline.
+
+    The best baseline is chosen for EACH horizon (persistence is better early, yesterday later) and then averaged
+    over the rows of the group. A single baseline for all 24 hours would be a weaker bar and flatter the model.
+    """
+    by_h = rows.groupby("horizon")[["err_persistence", "err_yesterday"]].transform("mean")
+    rows = rows.assign(err_best_baseline=by_h.min(axis=1))
     out = []
     for lo, hi in GROUPS + [(1, 24)]:
         r = rows[rows["horizon"].between(lo, hi)]
         if r.empty:
             continue
-        m, p, y = r["err_model"].mean(), r["err_persistence"].mean(), r["err_yesterday"].mean()
-        best = min(p, y)
-        out.append({"horizons": f"h{lo}-h{hi}", "n": len(r), "mae_model": m, "mae_persistence": p,
-                    "mae_yesterday": y, "gain_vs_best_baseline_pct": 100 * (best - m) / best if best else np.nan})
+        m, best = r["err_model"].mean(), r["err_best_baseline"].mean()
+        gain = 100 * (best - m) / best if best else np.nan
+        out.append({"horizons": f"h{lo}-h{hi}", "n": len(r), "mae_model": m,
+                    "mae_persistence": r["err_persistence"].mean(), "mae_yesterday": r["err_yesterday"].mean(),
+                    "mae_best_baseline": best, "gain_vs_best_baseline_pct": gain})
     return pd.DataFrame(out)
 
 

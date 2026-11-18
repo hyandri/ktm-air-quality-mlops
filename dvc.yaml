@@ -1,0 +1,61 @@
+# Hawa pipeline. Run everything that is out of date:   dvc repro
+# See the stage graph:                                   dvc dag
+# A stage re-runs only when one of its deps (files below) changed. Hashes are stored in dvc.lock.
+# Not in the pipeline on purpose: data download (needs API keys, results are cached), the frozen model
+# and the locked final test (`--final`), the sensor transfer test, and the live batch forecast.
+stages:
+  clean:
+    cmd: python -m hawa.processing.clean
+    deps:
+      - src/hawa/processing/clean.py
+      - src/hawa/config.py
+      - data/raw/open_data_nepal/us_embassy.csv
+      - data/raw/open_data_nepal/phora_durbar.csv
+      - data/raw/openaq/loc3459_sensor7710_pm25_measurements.csv
+      - data/raw/openaq/loc3460_sensor7711_pm25_measurements.csv
+    outs:
+      - data/processed/embassy_pm25_hourly_clean.csv
+      - data/processed/phora_pm25_hourly_clean.csv
+
+  dataset:
+    cmd: python -m hawa.processing.build_dataset --station embassy --weather auto
+    deps:
+      - src/hawa/processing/build_dataset.py
+      - src/hawa/config.py
+      - data/processed/embassy_pm25_hourly_clean.csv
+      - data/raw/openmeteo/openmeteo_archive_27.738703_85.336205.csv
+      - data/raw/openmeteo/openmeteo_historical_forecast_27.738703_85.336205.csv
+    outs:
+      - data/processed/embassy_dataset_auto.csv
+
+  features:
+    cmd: python -m hawa.processing.features --station embassy --weather auto
+    deps:
+      - src/hawa/processing/features.py
+      - src/hawa/config.py
+      - data/processed/embassy_dataset_auto.csv
+    outs:
+      - data/processed/embassy_features_auto.csv
+
+  train:
+    cmd: python -m hawa.models.train --station embassy --weather auto --name embassy_latest
+    deps:
+      - src/hawa/models
+      - src/hawa/processing/features.py
+      - src/hawa/versioning.py
+      - src/hawa/tracking.py
+      - src/hawa/config.py
+      - data/processed/embassy_features_auto.csv
+    outs:
+      - models/embassy_latest
+
+  walk_forward:
+    cmd: python -m hawa.evaluation.walk_forward --station embassy --weather auto
+    deps:
+      - src/hawa/evaluation
+      - src/hawa/models/learners.py
+      - src/hawa/processing/features.py
+      - src/hawa/config.py
+      - data/processed/embassy_features_auto.csv
+    outs:
+      - reports/walkforward_embassy.csv

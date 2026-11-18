@@ -98,6 +98,17 @@ Each saved forecast hour is compared with the real value once it exists, against
 (same rows for all three). This is the first monitoring step. It is on the sensor scale, so the model and the baselines
 are compared fairly even without calibration. Early numbers (a few days) are a smoke test only.
 
+### O12. DVC pipeline (`dvc.yaml`)
+- Stages: clean → dataset → features → train, and walk_forward. `dvc repro` runs only the stages whose inputs changed.
+  Inputs are listed by hand (code + data files), so a stage reruns when its code, `config.py` or its data changes.
+- Raw data is tracked with `dvc add data/raw` (the files stay out of git; git keeps only `data/raw.dvc`).
+  `dvc.lock` records the hash of every input and output of the last run.
+- Left out on purpose: downloads (API keys, already cached), the frozen model and the locked final test (must stay a
+  deliberate manual step), the sensor transfer test, and the live batch forecast (it runs on a schedule, not on data change).
+- The train stage writes `models/embassy_latest` (fixed path, DVC needs one). Forecast rows still get the label
+  `embassy_to_<date>` from the bundle metadata.
+- Limit: `config.py` is one dep for every stage, so changing a setting reruns all stages. Fine for now.
+
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?

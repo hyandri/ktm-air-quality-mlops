@@ -120,3 +120,9 @@ def test_find_latest_bundle_ignores_frozen_ones(tmp_path):
         meta = {"train_until_local_date": until, "created_utc": created}
         (d / "metadata.json").write_text(json.dumps(meta))
     assert batch.find_latest_bundle(tmp_path).name == "b"
+
+
+def test_version_name_comes_from_the_data_not_the_folder():
+    meta = {"station": "embassy", "train_last_origin_utc": "2026-06-17T20:00:00+00:00"}
+    assert batch.version_name(meta, "embassy_latest") == "embassy_to_2026-06-17"
+    assert batch.version_name({}, "embassy_latest") == "embassy_latest"

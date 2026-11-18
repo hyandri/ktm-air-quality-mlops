@@ -46,6 +46,7 @@ Experiments, one at a time, each measured against the baselines: tuning, model s
 python -m hawa.models.train                            # train on all available origins
 python -m hawa.models.train --train-until 2024-12-01   # a "frozen" model: only origins before that date (minus 24 h)
 python -m hawa.models.train --no-track                 # do not write an MLflow run
+python -m hawa.models.train --name embassy_latest      # fixed folder name (the DVC pipeline uses this)
 ```
 
 Each training also writes an **MLflow run** (experiment `hawa-train`): settings as params, git commit and data hash as tags, and the bundle files. See `src/hawa/tracking.py`.

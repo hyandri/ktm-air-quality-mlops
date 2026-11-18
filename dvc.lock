@@ -1,0 +1,152 @@
+schema: '2.0'
+stages:
+  clean:
+    cmd: python -m hawa.processing.clean
+    deps:
+    - path: data/raw/open_data_nepal/phora_durbar.csv
+      hash: md5
+      md5: 500230e1b5b3b5a745465fc0ef3e65a3
+      size: 9207360
+    - path: data/raw/open_data_nepal/us_embassy.csv
+      hash: md5
+      md5: eed378d3bbd69407ff06b821b1993700
+      size: 8727390
+    - path: data/raw/openaq/loc3459_sensor7710_pm25_measurements.csv
+      hash: md5
+      md5: 470826aecd54d8ba043774fe09824050
+      size: 13071974
+    - path: data/raw/openaq/loc3460_sensor7711_pm25_measurements.csv
+      hash: md5
+      md5: 287823ed7f98d877c5fbb579db1650db
+      size: 11035081
+    - path: src/hawa/config.py
+      hash: md5
+      md5: 525b6c4f2810f968abd24ad8eedcb14d
+      size: 6010
+    - path: src/hawa/processing/clean.py
+      hash: md5
+      md5: 3a17eee1d3f261c976660053e327efb4
+      size: 5436
+    outs:
+    - path: data/processed/embassy_pm25_hourly_clean.csv
+      hash: md5
+      md5: b9140d02ede452fcba74408f33f85938
+      size: 3093298
+    - path: data/processed/phora_pm25_hourly_clean.csv
+      hash: md5
+      md5: 0eb3b92cf80be6f99d7536598430c129
+      size: 2653211
+  dataset:
+    cmd: python -m hawa.processing.build_dataset --station embassy --weather 
+      auto
+    deps:
+    - path: data/processed/embassy_pm25_hourly_clean.csv
+      hash: md5
+      md5: b9140d02ede452fcba74408f33f85938
+      size: 3093298
+    - path: data/raw/openmeteo/openmeteo_archive_27.738703_85.336205.csv
+      hash: md5
+      md5: 800a4001e188a8c5580a5711f34ecdc3
+      size: 9803941
+    - path: 
+        data/raw/openmeteo/openmeteo_historical_forecast_27.738703_85.336205.csv
+      hash: md5
+      md5: 83c2c5d6fb2b88ac29289df5e9cd1d8d
+      size: 6426887
+    - path: src/hawa/config.py
+      hash: md5
+      md5: 525b6c4f2810f968abd24ad8eedcb14d
+      size: 6010
+    - path: src/hawa/processing/build_dataset.py
+      hash: md5
+      md5: 65c1eae50537e8839619fb5af8778c56
+      size: 6511
+    outs:
+    - path: data/processed/embassy_dataset_auto.csv
+      hash: md5
+      md5: eaee28eba4370c571d4bd9830a0b60d5
+      size: 22487591
+  features:
+    cmd: python -m hawa.processing.features --station embassy --weather auto
+    deps:
+    - path: data/processed/embassy_dataset_auto.csv
+      hash: md5
+      md5: eaee28eba4370c571d4bd9830a0b60d5
+      size: 22487591
+    - path: src/hawa/config.py
+      hash: md5
+      md5: 525b6c4f2810f968abd24ad8eedcb14d
+      size: 6010
+    - path: src/hawa/processing/features.py
+      hash: md5
+      md5: a68a7edce183fc7c2e3c14db4b76c3eb
+      size: 3937
+    outs:
+    - path: data/processed/embassy_features_auto.csv
+      hash: md5
+      md5: c1f2d8c5c01a3ba165002363e087396a
+      size: 31373647
+  train:
+    cmd: python -m hawa.models.train --station embassy --weather auto --name 
+      embassy_latest
+    deps:
+    - path: data/processed/embassy_features_auto.csv
+      hash: md5
+      md5: c1f2d8c5c01a3ba165002363e087396a
+      size: 31373647
+    - path: src/hawa/config.py
+      hash: md5
+      md5: 525b6c4f2810f968abd24ad8eedcb14d
+      size: 6010
+    - path: src/hawa/models
+      hash: md5
+      md5: cec8173161abb9fe6de51586c31b1e7c.dir
+      size: 31115
+      nfiles: 11
+    - path: src/hawa/processing/features.py
+      hash: md5
+      md5: a68a7edce183fc7c2e3c14db4b76c3eb
+      size: 3937
+    - path: src/hawa/tracking.py
+      hash: md5
+      md5: 3bfe7a56666d05f278bf5da6cc19357a
+      size: 1268
+    - path: src/hawa/versioning.py
+      hash: md5
+      md5: 1e71fcba3affc4bfd948b7a1576fc445
+      size: 774
+    outs:
+    - path: models/embassy_latest
+      hash: md5
+      md5: ad34ff9ad3946c189bdfc684adc169bc.dir
+      size: 42130304
+      nfiles: 2
+  walk_forward:
+    cmd: python -m hawa.evaluation.walk_forward --station embassy --weather auto
+    deps:
+    - path: data/processed/embassy_features_auto.csv
+      hash: md5
+      md5: c1f2d8c5c01a3ba165002363e087396a
+      size: 31373647
+    - path: src/hawa/config.py
+      hash: md5
+      md5: 525b6c4f2810f968abd24ad8eedcb14d
+      size: 6010
+    - path: src/hawa/evaluation
+      hash: md5
+      md5: 7531416b4753eae28e9fbb988c67ecd1.dir
+      size: 78275
+      nfiles: 17
+    - path: src/hawa/models/learners.py
+      hash: md5
+      md5: f7480cd76c0117ca375b5754d5456687
+      size: 2039
+    - path: src/hawa/processing/features.py
+      hash: md5
+      md5: a68a7edce183fc7c2e3c14db4b76c3eb
+      size: 3937
+    outs:
+    - path: reports/walkforward_embassy.csv
+      hash: md5
+      md5: 03f97d9d9aa1aefe95ebd1edc098ff62
+      size: 19070

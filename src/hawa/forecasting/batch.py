@@ -129,6 +129,15 @@ def run(sensors, model_bundle, model_version, now, out_path, fetch=openaq_fetch,
     return len(parts), skipped, origin
 
 
+def version_name(meta, fallback):
+    """Model version label: <station>_to_<last training origin date>. The same data gives the same label,
+    whatever the folder is called (the DVC pipeline always writes `embassy_latest`)."""
+    try:
+        return f"{meta['station']}_to_{pd.Timestamp(meta['train_last_origin_utc']):%Y-%m-%d}"
+    except (KeyError, ValueError):
+        return fallback
+
+
 def find_latest_bundle(models_dir=config.MODELS_DIR):
     """Newest bundle trained on all data (not a frozen one), or None."""
     best = None
@@ -155,8 +164,9 @@ def main(argv=None):
         now = now.tz_localize("UTC")
     model_bundle = bundle.load_bundle(model_dir)
 
-    n_ok, skipped, origin = run(config.LIVE_SENSORS, model_bundle, model_dir.name, now, a.out)
-    print(f"model: {model_dir.name} | origin (last complete hour): {origin:%Y-%m-%d %H:%M} UTC")
+    version = version_name(model_bundle.metadata, model_dir.name)
+    n_ok, skipped, origin = run(config.LIVE_SENSORS, model_bundle, version, now, a.out)
+    print(f"model: {version} | origin (last complete hour): {origin:%Y-%m-%d %H:%M} UTC")
     print(f"forecasts written for {n_ok} of {len(config.LIVE_SENSORS)} sensors -> {a.out}")
     for name, reason in skipped:
         print(f"  skipped {name}: {reason}")

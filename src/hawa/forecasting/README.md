@@ -18,6 +18,9 @@ python -m hawa.forecasting.batch --now 2026-11-16T10:20:00Z --out /tmp/test.csv 
 5. Append to `data/forecasts/forecasts.csv`. The key is (sensor_id, model_version, origin_utc, horizon),
    so running twice in the same hour does not duplicate rows.
 
+The `model_version` label is `<station>_to_<last training origin date>`, read from the bundle's metadata,
+so the DVC bundle `models/embassy_latest` still gets a label that says which data it was trained on.
+
 ## Output columns
 
 `location_id, sensor_id, sensor_name, model_version, origin_utc, target_hour_utc, horizon,
