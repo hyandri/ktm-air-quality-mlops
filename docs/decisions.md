@@ -93,6 +93,11 @@ Caveat: the shortlist was chosen on the same winter it was scored on, so the gai
 - Output is an idempotent CSV (dedupe on sensor, model, origin, horizon). It is the base for forecast-vs-actual monitoring.
 - Values are on the sensor scale and not calibrated. Calibration is a later experiment (see open questions).
 
+### O11. Live check of forecasts (`forecasting/actuals.py`)
+Each saved forecast hour is compared with the real value once it exists, against persistence and same-hour-yesterday
+(same rows for all three). This is the first monitoring step. It is on the sensor scale, so the model and the baselines
+are compared fairly even without calibration. Early numbers (a few days) are a smoke test only.
+
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?

@@ -23,6 +23,16 @@ python -m hawa.forecasting.batch --now 2026-11-16T10:20:00Z --out /tmp/test.csv 
 `location_id, sensor_id, sensor_name, model_version, origin_utc, target_hour_utc, horizon,
 forecast_pm25_sensor_scale, data_age_h, created_utc`
 
+## `actuals.py`: forecast vs real
+
+```bash
+python -m hawa.forecasting.actuals        # writes reports/live_eval.csv, prints MAE per horizon group
+```
+
+Fetches the real values again and compares, on the same rows: the model, persistence (value at the origin hour),
+and same hour yesterday. Forecast hours with no real value yet are left out. After one day only the first
+horizons have real values; after a few days all 24 do. Few rows means a smoke test, not a result.
+
 ## Important limits
 
 - Values are on each sensor's own scale. AirGradient sensors read about 1.56x the Embassy, and the model learned the Embassy.

@@ -75,6 +75,12 @@ def forecast_sensor(model_bundle, series, origin, max_age_h=config.MAX_DATA_AGE_
     return out, "ok"
 
 
+def openaq_to_series(raw):
+    """Raw OpenAQ table -> clean hourly Series (hour start, UTC), same rules as training."""
+    series, _ = clean.clean_frame(clean.openaq_to_frame(raw))
+    return series
+
+
 def openaq_fetch(sensor, now):
     return openaq.fetch_recent_hours(sensor["location_id"], sensor["sensor_id"],
                                      hours_back=config.LIVE_HISTORY_HOURS, now=now.to_pydatetime())
@@ -94,7 +100,7 @@ def run(sensors, model_bundle, model_version, now, out_path, fetch=openaq_fetch,
         if raw is None or raw.empty:
             skipped.append((s["name"], "API returned no rows"))
             continue
-        series, _ = clean.clean_frame(clean.openaq_to_frame(raw))
+        series = openaq_to_series(raw)
         fc, reason = forecast_sensor(model_bundle, series, origin, max_age_h)
         if fc is None:
             skipped.append((s["name"], reason))
