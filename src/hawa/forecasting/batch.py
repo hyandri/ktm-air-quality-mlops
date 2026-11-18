@@ -16,7 +16,8 @@ see docs/decisions.md O8). They are not calibrated and not reference-grade.
 Run from the project root (needs OPENAQ_API_KEY in .env, and a model from `python -m hawa.models.train`):
     python -m hawa.forecasting.batch
     python -m hawa.forecasting.batch --now 2026-11-16T10:20:00Z      # as if it were that time
-    python -m hawa.forecasting.batch --model models/embassy_to_2026-06-17
+    python -m hawa.forecasting.batch --model models/embassy_latest
+    python -m hawa.forecasting.batch --to-db                         # also save to PostgreSQL (docker compose up -d db)
 
 Writes: data/forecasts/forecasts.csv (appended; re-running the same hour does not create duplicates)
 """
@@ -28,6 +29,7 @@ from pathlib import Path
 import pandas as pd
 
 from hawa import config
+from hawa.db import store
 from hawa.ingestion import openaq
 from hawa.models import bundle, learners
 from hawa.processing import build_dataset, clean, features
@@ -86,8 +88,12 @@ def openaq_fetch(sensor, now):
                                      hours_back=config.LIVE_HISTORY_HOURS, now=now.to_pydatetime())
 
 
-def run(sensors, model_bundle, model_version, now, out_path, fetch=openaq_fetch, max_age_h=config.MAX_DATA_AGE_H):
-    """Forecast every sensor, append to `out_path`. `fetch(sensor, now)` returns the raw OpenAQ table."""
+def run(sensors, model_bundle, model_version, now, out_path, fetch=openaq_fetch, max_age_h=config.MAX_DATA_AGE_H,
+        engine=None):
+    """Forecast every sensor, append to `out_path`. `fetch(sensor, now)` returns the raw OpenAQ table.
+
+    With an `engine` (SQLAlchemy), the same rows are also saved to the database, and the run is logged there.
+    """
     now = pd.Timestamp(now).tz_convert("UTC")
     origin = last_complete_hour(now)
     parts, skipped = [], []
@@ -115,6 +121,7 @@ def run(sensors, model_bundle, model_version, now, out_path, fetch=openaq_fetch,
     new = new[COLUMNS]
     for col in ("origin_utc", "target_hour_utc"):      # one text format, so old and new rows compare equal
         new[col] = pd.to_datetime(new[col], utc=True).dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    fresh = new
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -126,6 +133,9 @@ def run(sensors, model_bundle, model_version, now, out_path, fetch=openaq_fetch,
         new = new.drop_duplicates(KEY, keep="last")
     if len(new) or not out_path.exists():
         new.to_csv(out_path, index=False)
+    if engine is not None:
+        store.save_forecasts(engine, fresh)
+        store.save_run(engine, now, origin, model_version, len(parts), skipped)
     return len(parts), skipped, origin
 
 
@@ -154,6 +164,8 @@ def main(argv=None):
     p.add_argument("--model", help="bundle folder (default: newest bundle trained on all data)")
     p.add_argument("--now", help="pretend it is this UTC time, e.g. 2026-11-16T10:20:00Z (default: now)")
     p.add_argument("--out", default=str(config.FORECASTS_DIR / "forecasts.csv"))
+    p.add_argument("--to-db", action="store_true",
+                   help="also save to the database (DATABASE_URL); the CSV is always written")
     a = p.parse_args(argv)
 
     model_dir = Path(a.model) if a.model else find_latest_bundle()
@@ -165,9 +177,14 @@ def main(argv=None):
     model_bundle = bundle.load_bundle(model_dir)
 
     version = version_name(model_bundle.metadata, model_dir.name)
-    n_ok, skipped, origin = run(config.LIVE_SENSORS, model_bundle, version, now, a.out)
+    engine = None
+    if a.to_db:
+        engine = store.make_engine()
+        store.init_db(engine)
+    n_ok, skipped, origin = run(config.LIVE_SENSORS, model_bundle, version, now, a.out, engine=engine)
     print(f"model: {version} | origin (last complete hour): {origin:%Y-%m-%d %H:%M} UTC")
-    print(f"forecasts written for {n_ok} of {len(config.LIVE_SENSORS)} sensors -> {a.out}")
+    print(f"forecasts written for {n_ok} of {len(config.LIVE_SENSORS)} sensors -> {a.out}"
+          + (" and the database" if engine is not None else ""))
     for name, reason in skipped:
         print(f"  skipped {name}: {reason}")
 

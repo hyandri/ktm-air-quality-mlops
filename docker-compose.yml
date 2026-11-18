@@ -1,0 +1,24 @@
+# Local development database. Start:  docker compose up -d db      Stop:  docker compose down
+# The data lives in the named volume `hawa_pgdata`, so it survives `docker compose down`.
+# (`docker compose down -v` also deletes the data.)
+# user/password "hawa" are for LOCAL use only. Host port 5433 avoids a clash with a Postgres you may already have.
+# Step 8 will add the API and the batch job as services here.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: hawa
+      POSTGRES_PASSWORD: hawa
+      POSTGRES_DB: hawa
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - hawa_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hawa -d hawa"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  hawa_pgdata:

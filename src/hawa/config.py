@@ -119,3 +119,10 @@ LIGHTGBM_PARAMS = dict(objective="l1", n_estimators=600, learning_rate=0.025, nu
 # 2017 and 2018 are skipped (too little earlier data), 2022 has no data, and the TEST winters are never used.
 WALK_FORWARD_WINTERS = (2019, 2020, 2021, 2023)
 TRAIN_GAP_H = 24   # training origins must end this many hours before the scored winter starts
+
+
+# ------------------------------------------------------------------- database and API
+# Local development database (docker-compose.yml, user/password "hawa" are for local use only).
+# Override with the DATABASE_URL environment variable or a line in .env.
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+psycopg://hawa:hawa@localhost:5433/hawa")
+API_STALE_AFTER_H = 3   # the API marks a forecast "stale" when its origin is older than this (job runs hourly)

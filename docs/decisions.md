@@ -109,6 +109,18 @@ are compared fairly even without calibration. Early numbers (a few days) are a s
   `embassy_to_<date>` from the bundle metadata.
 - Limit: `config.py` is one dep for every stage, so changing a setting reruns all stages. Fine for now.
 
+### O13. PostgreSQL and FastAPI
+- Why a database: queries ("all forecasts for one sensor"), one place for forecasts and later real values, the API reads from it.
+  The CSV stays as a simple backup; `batch --to-db` writes both.
+- Table key (sensor, model version, origin, horizon) makes re-runs idempotent; the write is an upsert (newer values win).
+- `batch_runs` records every run with the skipped sensors and reasons, so `/health` can say what the last run did.
+- SQLAlchemy Core, no ORM and no Alembic yet: two small tables, `init_db` creates them. Add migrations when the schema must change on live data.
+- The API only reads. `stale` means the newest forecast origin is older than 3 h (the job runs hourly), so a stopped job is visible.
+- Every forecast response says the values are on the sensor's own scale and not calibrated (O10).
+- Tests use SQLite by default and the same tests run on real PostgreSQL with `HAWA_TEST_DATABASE_URL`.
+  The upsert is written for both (`on_conflict_do_update`); both checked.
+- Local database credentials `hawa/hawa` are for the docker-compose database on 127.0.0.1 only.
+
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?

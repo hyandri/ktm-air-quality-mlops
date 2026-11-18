@@ -33,3 +33,4 @@ jobs:
           python -m hawa.processing.features --help
           python -m hawa.forecasting.batch --help
           python -m hawa.forecasting.actuals --help
+          python -m hawa.db.init --help

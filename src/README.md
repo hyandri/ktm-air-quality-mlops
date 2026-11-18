@@ -16,7 +16,9 @@ src/hawa/
 ├── ingestion/      fetch RAW data from APIs. Does not change values.
 ├── processing/     change data: cleaning, joining, features
 ├── models/         forecasting models (baselines, LightGBM), training and saving
-├── forecasting/    live batch forecast: fetch recent data, forecast 24 h, append to a CSV
+├── forecasting/    live batch forecast: fetch recent data, forecast 24 h, save to CSV (and database)
+├── db/             PostgreSQL tables and read/write functions for forecasts
+├── api/            FastAPI service that serves the newest forecasts (read-only)
 ├── tracking.py     MLflow helpers (where runs are stored)
 ├── versioning.py   git commit and data file hash
 ├── evaluation/     time-based splits, metrics, scoring
@@ -37,6 +39,8 @@ Docs per folder (add a new README when you add a new folder):
 | `evaluation/` | [evaluation/README.md](hawa/evaluation/README.md) |
 | `analysis/` | [analysis/README.md](hawa/analysis/README.md) |
 | `forecasting/` | [forecasting/README.md](hawa/forecasting/README.md) |
+| `db/` | [db/README.md](hawa/db/README.md) |
+| `api/` | [api/README.md](hawa/api/README.md) |
 
 Data files and their meaning: [`data/README.md`](../data/README.md).
 

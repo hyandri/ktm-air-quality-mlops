@@ -126,3 +126,21 @@ def test_version_name_comes_from_the_data_not_the_folder():
     meta = {"station": "embassy", "train_last_origin_utc": "2026-06-17T20:00:00+00:00"}
     assert batch.version_name(meta, "embassy_latest") == "embassy_to_2026-06-17"
     assert batch.version_name({}, "embassy_latest") == "embassy_latest"
+
+
+def test_run_with_engine_writes_the_database_too(model_bundle, tmp_path, db_engine):
+    from hawa.db import store
+
+    engine = db_engine
+    sensors = [{"name": "a", "location_id": 1, "sensor_id": 11}, {"name": "gone", "location_id": 2, "sensor_id": 22}]
+
+    def fetch(s, now):
+        return _raw(batch.last_complete_hour(now)) if s["name"] == "a" else None
+
+    batch.run(sensors, model_bundle, "m1", NOW, tmp_path / "f.csv", fetch=fetch, engine=engine)
+    later = NOW + pd.Timedelta(minutes=5)
+    batch.run(sensors, model_bundle, "m1", later, tmp_path / "f.csv", fetch=fetch, engine=engine)
+    rows = store.latest_forecast(engine, 11)
+    assert len(rows) == 24 and rows[0]["model_version"] == "m1"
+    assert store.latest_forecast(engine, 22) is None
+    assert store.last_run(engine)["n_ok"] == 1 and store.last_run(engine)["skipped"][0][0] == "gone"

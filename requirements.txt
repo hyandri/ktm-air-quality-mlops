@@ -4,9 +4,14 @@ requests
 scikit-learn
 lightgbm
 mlflow
+sqlalchemy
+psycopg[binary]
+fastapi
+uvicorn
 
 # Dev tools ([dev] extra in pyproject.toml)
 pytest
+httpx
 
 # The project itself, editable, so `python -m hawa...` works
 -e .
