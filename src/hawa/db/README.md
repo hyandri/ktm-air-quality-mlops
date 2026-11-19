@@ -22,7 +22,7 @@ All times are UTC. Values are on the sensor's own scale (not calibrated).
 ## Commands
 
 ```bash
-docker compose up -d db                                    # start PostgreSQL (data survives restarts)
+docker compose up -d --wait db                             # start PostgreSQL and wait until it is ready
 python -m hawa.db.init                                     # create the tables (safe to repeat)
 python -m hawa.db.init --from-csv data/forecasts/forecasts.csv   # one-time: copy the old CSV in
 python -m hawa.forecasting.batch --to-db                   # forecast and save to CSV and database

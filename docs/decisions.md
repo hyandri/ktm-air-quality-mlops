@@ -121,6 +121,21 @@ are compared fairly even without calibration. Early numbers (a few days) are a s
   The upsert is written for both (`on_conflict_do_update`); both checked.
 - Local database credentials `hawa/hawa` are for the docker-compose database on 127.0.0.1 only.
 
+### O14. Docker Compose
+- Three services: `db` (PostgreSQL), `api` (FastAPI), `forecaster` (hourly batch loop). One image for `api` and `forecaster`.
+- The image holds code and libraries only. Data, models and the API key are not in it: `models/` is mounted read-only,
+  `data/forecasts/` is mounted for the CSV backup, the key comes from `.env` at run time.
+- MLflow is not in the image: the serving code does not import it (moved to the `train` extra; `dev` still has it for the tests).
+- Library versions are pinned to the ones that trained the model (`docker/make_constraints.py` reads them from the bundle),
+  because a model saved by one LightGBM / scikit-learn version should be loaded by the same version.
+  `batch` prints a warning if they differ. Run the script and rebuild after every retraining.
+- The forecaster is a small Python loop (`forecasting/loop.py`), not cron: it works the same on any machine,
+  a failed run is logged and the next hour still runs. The `model_version` label comes from the bundle metadata, so it does not change with the mount path.
+- Containers run as the host user (`HAWA_UID`/`HAWA_GID`, default 1000), so files written into `data/forecasts/` stay yours.
+- Ports are bound to 127.0.0.1 only. Credentials `hawa/hawa` are local development values.
+- CI builds the image (no push) and checks the serving code imports without MLflow.
+- Not done yet: running the image in CI against a real database, and a restart-on-retrain flow (today: rebuild + `docker compose up -d`).
+
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?

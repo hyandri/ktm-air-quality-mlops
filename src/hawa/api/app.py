@@ -11,6 +11,7 @@ Endpoints
 The API only READS. The batch job (hawa.forecasting.batch --to-db) writes.
 Values are PM2.5 in ug/m3 on each sensor's OWN scale: not calibrated, not a health warning.
 """
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 import sqlalchemy as sa
@@ -60,7 +61,16 @@ def create_app(engine=None, clock=None):
     """`engine` and `clock` can be replaced in tests."""
     engine = engine or store.make_engine()
     clock = clock or (lambda: datetime.now(timezone.utc))
-    app = FastAPI(title="Hawa: Kathmandu PM2.5 forecast", version="0.1")
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        try:
+            store.init_db(engine)         # creates the tables if the forecaster has not yet; safe to repeat
+        except sa.exc.SQLAlchemyError as err:
+            print(f"database not ready at start: {type(err).__name__} ({err.__class__.__module__})", flush=True)
+        yield
+
+    app = FastAPI(title="Hawa: Kathmandu PM2.5 forecast", version="0.1", lifespan=lifespan)
 
     @app.get("/health")
     def health():

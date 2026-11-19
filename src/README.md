@@ -16,7 +16,7 @@ src/hawa/
 ├── ingestion/      fetch RAW data from APIs. Does not change values.
 ├── processing/     change data: cleaning, joining, features
 ├── models/         forecasting models (baselines, LightGBM), training and saving
-├── forecasting/    live batch forecast: fetch recent data, forecast 24 h, save to CSV (and database)
+├── forecasting/    live batch forecast: fetch recent data, forecast 24 h, save to CSV and database, hourly loop
 ├── db/             PostgreSQL tables and read/write functions for forecasts
 ├── api/            FastAPI service that serves the newest forecasts (read-only)
 ├── tracking.py     MLflow helpers (where runs are stored)

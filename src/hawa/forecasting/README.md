@@ -26,6 +26,16 @@ so the DVC bundle `models/embassy_latest` still gets a label that says which dat
 `location_id, sensor_id, sensor_name, model_version, origin_utc, target_hour_utc, horizon,
 forecast_pm25_sensor_scale, data_age_h, created_utc`
 
+## `loop.py`: the hourly schedule
+
+```bash
+python -m hawa.forecasting.loop --model models/embassy_latest
+```
+
+Runs `batch --to-db` once at start and then at minute 10 of every hour, forever. One failed run is printed and
+the loop tries again next hour. This is what the `forecaster` container runs (`docs/docker.md`).
+`batch` also warns when the installed LightGBM / scikit-learn / pandas differ from the ones that trained the model.
+
 ## `actuals.py`: forecast vs real
 
 ```bash

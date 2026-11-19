@@ -144,3 +144,14 @@ def test_run_with_engine_writes_the_database_too(model_bundle, tmp_path, db_engi
     assert len(rows) == 24 and rows[0]["model_version"] == "m1"
     assert store.latest_forecast(engine, 22) is None
     assert store.last_run(engine)["n_ok"] == 1 and store.last_run(engine)["skipped"][0][0] == "gone"
+
+
+def test_version_warnings_name_the_library_that_differs():
+    import lightgbm
+
+    same = {"versions": {"lightgbm": lightgbm.__version__}}
+    assert batch.version_warnings(same) == []
+    other = {"versions": {"lightgbm": "0.0.1", "pandas": pd.__version__}}
+    out = batch.version_warnings(other)
+    assert len(out) == 1 and out[0].startswith("lightgbm: model trained with 0.0.1")
+    assert batch.version_warnings({}) == []

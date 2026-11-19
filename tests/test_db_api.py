@@ -124,3 +124,9 @@ def test_skipped_json_is_plain_text(engine):
     store.save_run(engine, NOW, ORIGIN, "m1", 0, [("a", "x")])
     with engine.connect() as c:
         assert json.loads(c.execute(sa.select(schema.batch_runs.c.skipped)).scalar()) == [["a", "x"]]
+
+
+def test_api_creates_the_tables_at_start_so_an_empty_database_is_no_data_not_db_down(tmp_path):
+    fresh = sa.create_engine(f"sqlite:///{tmp_path / 'fresh.db'}")        # no tables yet
+    with TestClient(api.create_app(fresh, clock=lambda: NOW.to_pydatetime())) as client:   # `with` runs the start-up
+        assert client.get("/health").json()["status"] == "no_data"

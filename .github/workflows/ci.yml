@@ -34,3 +34,14 @@ jobs:
           python -m hawa.forecasting.batch --help
           python -m hawa.forecasting.actuals --help
           python -m hawa.db.init --help
+          python -m hawa.forecasting.loop --help
+
+  docker:
+    # Only checks that the image builds (nothing is pushed anywhere).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -t hawa:ci .
+      - name: Serving code starts without MLflow
+        run: docker run --rm hawa:ci python -c "import hawa.api.app, hawa.forecasting.loop"

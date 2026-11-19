@@ -12,7 +12,6 @@ dependencies = [
     "requests",
     "scikit-learn",
     "lightgbm",
-    "mlflow",
     "sqlalchemy",
     "psycopg[binary]",
     "fastapi",
@@ -20,7 +19,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "httpx"]   # httpx: FastAPI test client
+train = ["mlflow"]   # experiment tracking: training and evaluation only, NOT needed by the API or the batch job
+dev = ["pytest", "ruff", "httpx", "mlflow"]   # httpx: FastAPI test client
 pipeline = ["dvc"]   # not in CI (heavy): pip install -e ".[pipeline]"
 
 [tool.setuptools.packages.find]

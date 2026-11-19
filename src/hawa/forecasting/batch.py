@@ -148,6 +148,16 @@ def version_name(meta, fallback):
         return fallback
 
 
+def version_warnings(meta):
+    """Differences between the library versions that trained the model and the ones installed now."""
+    import lightgbm
+    import sklearn
+    installed = {"lightgbm": lightgbm.__version__, "scikit_learn": sklearn.__version__, "pandas": pd.__version__}
+    trained = meta.get("versions", {})
+    return [f"{k}: model trained with {trained[k]}, installed {installed[k]}"
+            for k in installed if k in trained and trained[k] != installed[k]]
+
+
 def find_latest_bundle(models_dir=config.MODELS_DIR):
     """Newest bundle trained on all data (not a frozen one), or None."""
     best = None
@@ -175,6 +185,8 @@ def main(argv=None):
     if now.tzinfo is None:
         now = now.tz_localize("UTC")
     model_bundle = bundle.load_bundle(model_dir)
+    for warning in version_warnings(model_bundle.metadata):
+        print(f"WARNING library version differs ({warning}). Predictions may differ or loading may fail.")
 
     version = version_name(model_bundle.metadata, model_dir.name)
     engine = None

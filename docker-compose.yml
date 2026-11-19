@@ -1,8 +1,26 @@
-# Local development database. Start:  docker compose up -d db      Stop:  docker compose down
-# The data lives in the named volume `hawa_pgdata`, so it survives `docker compose down`.
-# (`docker compose down -v` also deletes the data.)
-# user/password "hawa" are for LOCAL use only. Host port 5433 avoids a clash with a Postgres you may already have.
-# Step 8 will add the API and the batch job as services here.
+# The whole system. First time:     python docker/make_constraints.py && docker compose build
+# Start everything and wait:         docker compose up -d --wait
+# Look:                              docker compose ps        docker compose logs -f forecaster
+# Stop:                              docker compose down      (data survives; `down -v` also deletes the database)
+#
+#   db          PostgreSQL (data in the named volume `hawa_pgdata`)
+#   api         FastAPI on http://127.0.0.1:8000  (docs at /docs)
+#   forecaster  runs the batch forecast now and then every hour at minute 10, saves to the database and the CSV
+#
+# Needs in .env:  OPENAQ_API_KEY=...    (compose reads .env itself; the key is never put into the image)
+# user/password "hawa" are for LOCAL use only; every port is bound to 127.0.0.1.
+# HAWA_UID / HAWA_GID: the containers write files into ./data/forecasts as this user (default 1000, the first
+# Linux user). If `id -u` shows another number, put HAWA_UID=<number> and HAWA_GID=<number> in .env.
+
+x-app: &app
+  build: .
+  image: hawa:local
+  user: "${HAWA_UID:-1000}:${HAWA_GID:-1000}"
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+
 services:
   db:
     image: postgres:16
@@ -11,7 +29,7 @@ services:
       POSTGRES_PASSWORD: hawa
       POSTGRES_DB: hawa
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:5433:5432"        # 5433 on your machine, so the host tools (hawa.db.init, tests) can reach it
     volumes:
       - hawa_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,6 +37,30 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    <<: *app
+    environment:
+      DATABASE_URL: postgresql+psycopg://hawa:hawa@db:5432/hawa
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  forecaster:
+    <<: *app
+    command: ["python", "-m", "hawa.forecasting.loop", "--model", "models/embassy_latest"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://hawa:hawa@db:5432/hawa
+      OPENAQ_API_KEY: ${OPENAQ_API_KEY:-}
+    volumes:
+      # the whole models/ folder (read only): `dvc repro` replaces models/embassy_latest, a parent mount follows it
+      - ./models:/app/models:ro
+      - ./data/forecasts:/app/data/forecasts
 
 volumes:
   hawa_pgdata:
