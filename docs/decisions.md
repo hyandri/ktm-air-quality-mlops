@@ -136,6 +136,17 @@ are compared fairly even without calibration. Early numbers (a few days) are a s
 - CI builds the image (no push) and checks the serving code imports without MLflow.
 - Not done yet: running the image in CI against a real database, and a restart-on-retrain flow (today: rebuild + `docker compose up -d`).
 
+### O15. Monitoring (`live_eval` table, `/metrics`, hourly comparison)
+- Every hour, after the forecast, the loop compares the last 7 days of saved forecasts with the real values and upserts
+  them into `live_eval` (key sensor, model, origin, horizon). Rows appear as soon as the real hour exists; reruns do not duplicate.
+- `GET /metrics?days=N` gives MAE of the model, persistence and same-hour-yesterday per horizon group, and the gain over
+  the better baseline (chosen per horizon, as in all our tests). It also gives uptime: hours with a forecast / hours expected.
+  A sleeping laptop therefore shows as lower uptime, not as a silent hole.
+- All numbers are on the sensor's own scale; the model and baselines are on the same scale, so the comparison is fair without calibration.
+- Limits: 8 sensors share the same weather, so they are not independent trials. A few days is a smoke test. No alert
+  yet: someone has to look at /metrics. Drift in the INPUTS (not only the error) is not monitored yet.
+- A retraining rule can now use this table: see the retraining policy (next).
+
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?

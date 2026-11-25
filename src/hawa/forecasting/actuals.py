@@ -9,7 +9,9 @@ All three are scored on the SAME rows, so the comparison is fair. Rows where the
 are left out (the hour has not happened yet, or the sensor had no valid value).
 
 Run from the project root (needs OPENAQ_API_KEY in .env):
-    python -m hawa.forecasting.actuals
+    python -m hawa.forecasting.actuals                  # compare the CSV, write reports/live_eval.csv
+    python -m hawa.forecasting.actuals --to-db    # last 7 days from the DATABASE, saved into live_eval
+                                                  # (the hourly forecaster does this; the API serves it at /metrics)
 
 Writes: reports/live_eval.csv (one row per compared forecast hour). Prints MAE per group of horizons.
 Few days of data = few rows: read the numbers as a smoke test, not as a result.
@@ -95,15 +97,48 @@ def summary(rows):
     return pd.DataFrame(out)
 
 
+def summarise_for_api(rows):
+    """Compact summary of `live_eval` rows for the API: overall and per horizon group, plus sample size."""
+    if rows is None or len(rows) == 0:
+        return {"n_rows": 0, "groups": []}
+    r = rows.rename(columns={"forecast": "forecast_pm25_sensor_scale"})
+    out = summary(r)
+    return {"n_rows": int(len(rows)), "n_sensors": int(rows["sensor_id"].nunique()),
+            "n_origins": int(pd.to_datetime(rows["origin_utc"], utc=True).nunique()),
+            "groups": [{k: (None if pd.isna(v) else (v if isinstance(v, str) else round(float(v), 2)))
+                        for k, v in row.items()} for row in out.to_dict("records")]}
+
+
+def run_to_db(engine, now, fetch=openaq_fetch_since, sensors=None, days=7):
+    """Compare the forecasts of the last `days` days and save the result. Returns (n_rows, problems)."""
+    from hawa.db import store
+    now = pd.Timestamp(now).tz_convert("UTC")
+    forecasts = store.forecasts_since(engine, now - pd.Timedelta(days=days))
+    if forecasts.empty:
+        return 0, []
+    rows, problems = evaluate(forecasts, fetch, now, sensors if sensors is not None else config.LIVE_SENSORS)
+    return store.save_live_eval(engine, rows, now), problems
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--forecasts", default=str(config.FORECASTS_DIR / "forecasts.csv"))
     p.add_argument("--out", default=str(config.REPORTS_DIR / "live_eval.csv"))
     p.add_argument("--now", help="pretend it is this UTC time (default: now)")
+    p.add_argument("--to-db", action="store_true", help="use the last 7 days from the database and save into live_eval")
     a = p.parse_args(argv)
     now = pd.Timestamp(a.now) if a.now else pd.Timestamp(datetime.now(timezone.utc))
     if now.tzinfo is None:
         now = now.tz_localize("UTC")
+    if a.to_db:
+        from hawa.db import store
+        engine = store.make_engine()
+        store.init_db(engine)
+        n, problems = run_to_db(engine, now)
+        for name, why in problems:
+            print(f"  skipped {name}: {why}")
+        print(f"live_eval: {n} compared forecast hours saved")
+        return
     forecasts = pd.read_csv(a.forecasts)
     rows, problems = evaluate(forecasts, openaq_fetch_since, now, config.LIVE_SENSORS)
     for name, why in problems:

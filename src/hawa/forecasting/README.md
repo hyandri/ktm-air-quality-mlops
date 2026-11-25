@@ -32,15 +32,18 @@ forecast_pm25_sensor_scale, data_age_h, created_utc`
 python -m hawa.forecasting.loop --model models/embassy_latest
 ```
 
-Runs `batch --to-db` once at start and then at minute 10 of every hour, forever. One failed run is printed and
+Runs `batch --to-db` and then `actuals --to-db` once at start and then at minute 10 of every hour, forever. One failed run is printed and
 the loop tries again next hour. This is what the `forecaster` container runs (`docs/docker.md`).
 `batch` also warns when the installed LightGBM / scikit-learn / pandas differ from the ones that trained the model.
 
 ## `actuals.py`: forecast vs real
 
 ```bash
-python -m hawa.forecasting.actuals        # writes reports/live_eval.csv, prints MAE per horizon group
+python -m hawa.forecasting.actuals            # CSV in, reports/live_eval.csv out, prints MAE per horizon group
+python -m hawa.forecasting.actuals --to-db    # last 7 days from the database, saved into the live_eval table
 ```
+
+The hourly loop runs the `--to-db` form after every forecast, so `GET /metrics` is always fresh.
 
 Fetches the real values again and compares, on the same rows: the model, persistence (value at the origin hour),
 and same hour yesterday. Forecast hours with no real value yet are left out. After one day only the first

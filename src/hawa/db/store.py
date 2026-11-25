@@ -125,3 +125,54 @@ def last_run(engine):
     for k in ("created_utc", "origin_utc"):
         d[k] = utc(d[k])
     return d
+
+
+# ------------------------------------------------------------------ live evaluation and uptime
+EVAL_COLUMNS = ["target_hour_utc", "forecast", "actual", "persistence", "same_hour_yesterday",
+                "err_model", "err_persistence", "err_yesterday", "evaluated_utc"]
+
+
+def forecasts_since(engine, since):
+    """Forecast rows with origin >= `since`, as a DataFrame with the same column names as forecasts.csv."""
+    f = schema.forecasts
+    with engine.connect() as conn:
+        rows = conn.execute(sa.select(f).where(f.c.origin_utc >= utc(since).to_pydatetime())).all()
+    df = pd.DataFrame([dict(r._mapping) for r in rows], columns=[c.name for c in f.columns])
+    for col in ("origin_utc", "target_hour_utc", "created_utc"):
+        df[col] = pd.to_datetime(df[col], utc=True)
+    return df
+
+
+def save_live_eval(engine, rows, evaluated_utc):
+    """Upsert compared rows (output of actuals.compare). Returns the number of rows."""
+    if rows is None or len(rows) == 0:
+        return 0
+    d = pd.DataFrame({
+        "sensor_id": rows["sensor_id"].astype(int), "model_version": rows["model_version"],
+        "origin_utc": [utc(v).to_pydatetime() for v in rows["origin_utc"]], "horizon": rows["horizon"].astype(int),
+        "target_hour_utc": [utc(v).to_pydatetime() for v in rows["target_hour_utc"]],
+        "forecast": rows["forecast_pm25_sensor_scale"], "actual": rows["actual"],
+        "persistence": rows["persistence"], "same_hour_yesterday": rows["same_hour_yesterday"],
+        "err_model": rows["err_model"], "err_persistence": rows["err_persistence"],
+        "err_yesterday": rows["err_yesterday"], "evaluated_utc": utc(evaluated_utc).to_pydatetime()})
+    records = d.astype(object).to_dict("records")
+    _upsert(engine, schema.live_eval, records, KEY_COLUMNS)
+    return len(records)
+
+
+def live_eval_since(engine, since):
+    """Compared rows whose TARGET hour is >= `since`, as a DataFrame."""
+    t = schema.live_eval
+    with engine.connect() as conn:
+        rows = conn.execute(sa.select(t).where(t.c.target_hour_utc >= utc(since).to_pydatetime())).all()
+    return pd.DataFrame([dict(r._mapping) for r in rows], columns=[c.name for c in t.columns])
+
+
+def runs_since(engine, since):
+    """Number of batch runs, and the number of distinct origin hours they covered, since `since`."""
+    b = schema.batch_runs
+    with engine.connect() as conn:
+        n_runs, n_origins = conn.execute(
+            sa.select(sa.func.count(), sa.func.count(sa.distinct(b.c.origin_utc)))
+            .where(b.c.created_utc >= utc(since).to_pydatetime())).one()
+    return int(n_runs), int(n_origins)

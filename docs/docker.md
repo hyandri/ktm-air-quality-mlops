@@ -26,6 +26,7 @@ Stop any `uvicorn` you started by hand first: the api container uses the same po
 docker compose ps                          # all three should be running / healthy
 docker compose logs -f forecaster          # follow the hourly runs (Ctrl+C stops following, not the service)
 curl -s localhost:8000/health              # status ok / stale, last run, skipped sensors
+curl -s "localhost:8000/metrics?days=7"    # uptime and real error vs baselines
 docker compose down                        # stop (the database keeps its data)
 ```
 

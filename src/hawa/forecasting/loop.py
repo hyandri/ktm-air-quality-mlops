@@ -4,7 +4,8 @@
 
 It runs once at start, then at minute 10 of every hour (OpenAQ needs a few minutes to publish the hour that just
 ended). If one run fails (network down, no data), the error is printed and the loop tries again next hour.
-Every run saves to the CSV and to the database (`batch --to-db`); the key makes repeated runs safe.
+Every run saves to the CSV and to the database (`batch --to-db`), then compares the last 7 days of forecasts with
+the real values (`actuals --to-db`). The keys make repeated runs safe.
 """
 import argparse
 import time
@@ -13,7 +14,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from hawa.forecasting import batch
+from hawa.forecasting import actuals, batch
 
 RUN_MINUTE = 10
 
@@ -53,7 +54,14 @@ def main(argv=None):
     p.add_argument("--minute", type=int, default=RUN_MINUTE, help="minute of the hour to run (default 10)")
     a = p.parse_args(argv)
     args = ["--to-db"] + (["--model", a.model] if a.model else [])
-    run_forever(lambda: batch.main(args), minute=a.minute)
+
+    def job():
+        try:
+            batch.main(args)
+        finally:                      # the comparison runs even if the forecast step failed
+            actuals.main(["--to-db"])
+
+    run_forever(job, minute=a.minute)
 
 
 if __name__ == "__main__":

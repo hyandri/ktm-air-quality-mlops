@@ -7,6 +7,7 @@ Endpoints
     GET /health                              service alive? database reachable? how old is the newest forecast?
     GET /sensors                             sensors that have forecasts, with their newest forecast time
     GET /sensors/{sensor_id}/forecast/latest the next 24 hours for one sensor
+    GET /metrics?days=7                      real error of the live forecasts vs two simple baselines, and uptime
 
 The API only READS. The batch job (hawa.forecasting.batch --to-db) writes.
 Values are PM2.5 in ug/m3 on each sensor's OWN scale: not calibrated, not a health warning.
@@ -14,13 +15,15 @@ Values are PM2.5 in ug/m3 on each sensor's OWN scale: not calibrated, not a heal
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
+import pandas as pd
 import sqlalchemy as sa
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from hawa import config
 from hawa.db import store
+from hawa.forecasting import actuals
 
 UNIT = "ug/m3, on the sensor's own scale"
 NOTE = "Not calibrated: AirGradient sensors read about 1.56x higher than the US Embassy. Not a health warning."
@@ -87,6 +90,26 @@ def create_app(engine=None, clock=None):
             "n_ok": run["n_ok"], "n_skipped": run["n_skipped"], "skipped": run["skipped"]}
         return {"status": "ok" if age <= config.API_STALE_AFTER_H else "stale",
                 "newest_origin_utc": newest.isoformat(), "newest_origin_age_h": age, "last_run": last}
+
+    @app.get("/metrics")
+    def metrics(days: int = Query(7, ge=1, le=90)):
+        now = store.utc(clock())
+        since = now - pd.Timedelta(days=days)
+        try:
+            rows = store.live_eval_since(engine, since)
+            n_runs, n_origins = store.runs_since(engine, since)
+        except sa.exc.SQLAlchemyError:
+            return JSONResponse(status_code=503, content={"status": "db_down"})
+        expected = days * 24
+        return {
+            "window_days": days, "until_utc": now.isoformat(),
+            "uptime": {"hours_with_a_forecast": n_origins, "hours_expected": expected,
+                       "share": round(min(1.0, n_origins / expected), 3)},
+            "live_eval": actuals.summarise_for_api(rows),
+            "how_to_read": ("MAE in ug/m3, sensor's own scale. gain_vs_best_baseline_pct > 0 means the model beat the "
+                            "better of persistence and same-hour-yesterday (chosen per horizon). A few days of "
+                            "data is a smoke test, not a result."),
+        }
 
     @app.get("/sensors", response_model=list[SensorOut])
     def sensors():

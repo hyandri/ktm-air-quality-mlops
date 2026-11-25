@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy as sa
@@ -130,3 +131,48 @@ def test_api_creates_the_tables_at_start_so_an_empty_database_is_no_data_not_db_
     fresh = sa.create_engine(f"sqlite:///{tmp_path / 'fresh.db'}")        # no tables yet
     with TestClient(api.create_app(fresh, clock=lambda: NOW.to_pydatetime())) as client:   # `with` runs the start-up
         assert client.get("/health").json()["status"] == "no_data"
+
+
+# ------------------------------------------------------------------ live evaluation and /metrics
+def _series_for(hours=400):
+    idx = pd.date_range(end="2026-11-18T04:00:00Z", periods=hours, freq="h", tz="UTC")
+    return pd.Series(50 + 20 * np.sin(np.arange(hours) * 2 * np.pi / 24), index=idx)
+
+
+def _raw_for(series):
+    return pd.DataFrame({"period.datetimeFrom.utc": series.index.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "value": series.to_numpy()})
+
+
+def test_run_to_db_saves_compared_rows_once_and_metrics_reads_them(engine):
+    from hawa.forecasting import actuals
+
+    series = _series_for()
+    store.save_forecasts(engine, _forecast_rows(base=50.0))                 # origin 03:00 -> targets 04:00 .. next day
+    sensors = [{"name": "Chovar", "location_id": 5, "sensor_id": 11}]
+    fetch = lambda s, now, hours_back: _raw_for(series)                      # noqa: E731
+    n, problems = actuals.run_to_db(engine, NOW, fetch=fetch, sensors=sensors)
+    assert n == 1 and problems == []                                         # only target 04:00 has a real value so far
+    n2, _ = actuals.run_to_db(engine, NOW, fetch=fetch, sensors=sensors)
+    assert n2 == 1
+    with engine.connect() as c:
+        assert c.execute(sa.select(sa.func.count()).select_from(schema.live_eval)).scalar() == 1
+
+    store.save_run(engine, NOW, ORIGIN, "m1", 1, [])
+    body = _client(engine).get("/metrics?days=7").json()
+    assert body["live_eval"]["n_rows"] == 1 and body["live_eval"]["groups"][0]["horizons"] == "h1-h6"
+    assert body["uptime"]["hours_with_a_forecast"] == 1 and body["uptime"]["hours_expected"] == 168
+    assert "smoke test" in body["how_to_read"]
+
+
+def test_metrics_on_empty_database_and_bad_days(engine):
+    body = _client(engine).get("/metrics").json()
+    assert body["live_eval"] == {"n_rows": 0, "groups": []} and body["uptime"]["share"] == 0.0
+    assert _client(engine).get("/metrics?days=0").status_code == 422
+    assert _client(engine).get("/metrics?days=999").status_code == 422
+
+
+def test_run_to_db_with_no_forecasts_does_nothing(engine):
+    from hawa.forecasting import actuals
+
+    assert actuals.run_to_db(engine, NOW, fetch=lambda *a: None, sensors=[]) == (0, [])

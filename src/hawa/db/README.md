@@ -17,6 +17,9 @@ horizon` (key), `location_id, sensor_name, target_hour_utc, forecast_pm25_sensor
 **`batch_runs`** one row per job run: `created_utc, origin_utc, model_version, n_ok, n_skipped, skipped` (JSON text
 with the sensors that were skipped and why). `GET /health` shows the last one.
 
+**`live_eval`** one row per forecast hour that now has a real value: forecast, actual, the two baselines and the
+three absolute errors. Filled by `hawa.forecasting.actuals --to-db`; read by `GET /metrics`.
+
 All times are UTC. Values are on the sensor's own scale (not calibrated).
 
 ## Commands

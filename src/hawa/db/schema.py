@@ -4,6 +4,9 @@ forecasts   one row per (sensor, model version, origin, horizon). The key makes 
 batch_runs  one row per batch job run: when, which origin and model, how many sensors ok / skipped and why.
             The API health check reads it.
 
+live_eval   one row per forecast hour that has a real value: forecast, real value, two baselines, absolute errors.
+            Filled by `hawa.forecasting.actuals --to-db`. The API's /metrics reads it.
+
 All times are UTC. Values are PM2.5 on the SENSOR's own scale (not calibrated, see docs/decisions.md O8, O10).
 """
 import sqlalchemy as sa
@@ -34,4 +37,22 @@ batch_runs = sa.Table(
     sa.Column("n_ok", sa.Integer, nullable=False),
     sa.Column("n_skipped", sa.Integer, nullable=False),
     sa.Column("skipped", sa.Text, nullable=False),   # JSON text: [[sensor name, reason], ...]
+)
+
+live_eval = sa.Table(
+    "live_eval", metadata,
+    sa.Column("sensor_id", sa.BigInteger, primary_key=True),
+    sa.Column("model_version", sa.String(80), primary_key=True),
+    sa.Column("origin_utc", sa.DateTime(timezone=True), primary_key=True),
+    sa.Column("horizon", sa.SmallInteger, primary_key=True),
+    sa.Column("target_hour_utc", sa.DateTime(timezone=True), nullable=False),
+    sa.Column("forecast", sa.Float, nullable=False),
+    sa.Column("actual", sa.Float, nullable=False),
+    sa.Column("persistence", sa.Float, nullable=False),
+    sa.Column("same_hour_yesterday", sa.Float, nullable=False),
+    sa.Column("err_model", sa.Float, nullable=False),
+    sa.Column("err_persistence", sa.Float, nullable=False),
+    sa.Column("err_yesterday", sa.Float, nullable=False),
+    sa.Column("evaluated_utc", sa.DateTime(timezone=True), nullable=False),
+    sa.Index("ix_live_eval_target", "target_hour_utc"),
 )
