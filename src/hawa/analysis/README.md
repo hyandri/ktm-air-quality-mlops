@@ -7,6 +7,8 @@ They do **not** change files in `data/processed/`.
 |---|---|
 | `sensor_scorecard.py` | which live OpenAQ sensors have complete PM2.5 data? |
 | `sensor_transfer.py` | does the Embassy-trained model still work on live (AirGradient) sensors? |
+| `calibration.py` | can one simple factor fix the sensor-vs-Embassy scale, and does it help the model? (fit outside the locked winters, test on winter 2025/26) |
+| `data_freshness.py` | does OpenAQ have newer Embassy / Phora data than our raw files, and does it agree with what we have? |
 | `openmeteo_probe.py` | which weather variables does each Open-Meteo API really return, and since when? |
 
 ## `sensor_scorecard.py`
@@ -68,3 +70,28 @@ For every downloaded `loc<ID>_sensor<SID>_pm25_hours.csv` and one winter (defaul
 Also `dist_km` (straight line to the Embassy) and, once, the same model scored on the Embassy for that winter (the reference). The sensor's table is built with the same functions as in training. A sensor needs at least 500 scored hours (`--min-origins`) and 200 overlap hours to get a number. Writes `reports/sensor_transfer.csv`.
 
 **Limits:** about one winter per sensor; sensors are at different places, so agreement does not prove the instruments are interchangeable; winter 2025/26 is also a locked test winter for the Embassy model, so a later calibration based on these numbers must be treated as a new experiment.
+
+## `data_freshness.py`
+
+```
+python -m hawa.analysis.data_freshness                          # both stations, from 2026-05-15 to today
+python -m hawa.analysis.data_freshness --start 2026-06-01 --station embassy
+```
+
+Downloads the recent period into a scratch folder (`data/interim/openaq_fresh/`), cleans it with the project rules and
+prints: our raw data end, the new data range, valid hours after our end, valid hours per month, and on the overlap how
+many hours are identical (same data source?). Changes nothing in `data/raw` or `data/processed`.
+Needs `OPENAQ_API_KEY`. Writes `reports/data_freshness.csv`.
+
+## `calibration.py`
+
+```
+python -m hawa.models.train --train-until 2024-12-01 --no-track    # once, if the frozen model is missing
+python -m hawa.analysis.calibration                                # sensors within 10 km of the Embassy
+python -m hawa.analysis.calibration --max-km 15 --winter 2025
+```
+
+Prints three things: (1) the ratio sensor / Embassy per calendar month, (2) per sensor, on winter 2025/26, the model gain
+and the scale match with the Embassy for raw, pooled-factor and own-factor input, (3) the verdict from a decision rule
+that is written in the file header BEFORE any result is seen. The factors are fitted only outside the locked test winters.
+Writes `reports/calibration_monthly.csv` and `reports/calibration_test.csv`. Changes nothing else.

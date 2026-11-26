@@ -147,6 +147,36 @@ are compared fairly even without calibration. Early numbers (a few days) are a s
   yet: someone has to look at /metrics. Drift in the INPUTS (not only the error) is not monitored yet.
 - A retraining rule can now use this table: see the retraining policy (next).
 
+### O16. Data freshness: the Embassy feed has stopped
+`analysis/data_freshness.py` (run 2026-11-25): OpenAQ has no Embassy data after 2026-06-17 22:00 UTC; the 522 overlapping
+hours are 100% identical to our raw file. Phora returns nothing (it stopped in March 2025). The aqicn page also shows the
+Embassy as unavailable from 18 June 2026. We do not know why. Consequences: the Embassy model cannot be retrained on newer
+Embassy data, and the live sensors are the only source of labels from now on. Automated retraining is not built (nothing to feed it);
+a written manual policy replaces it.
+
+### O17. Calibration experiment (design, result still open)
+`analysis/calibration.py`. Question: does dividing sensor values by one factor give the model better input?
+Factors are fitted only on paired hours outside the locked test winters and scored on winter 2025/26. Variants: raw,
+pooled (median of the other sensors, leave one out; what a new sensor would get), own (ceiling).
+Decision rule fixed before the first run: adopt pooled only if median gain improves by >= 2 points, on >= 60% of sensors,
+the match with the Embassy improves, and the monthly ratio varies by no more than 1.25x between months.
+Limits: ratio mixes instrument bias and place differences (sensors within 10 km only); winter 2025/26 is the only winter
+with many sensors and was also used to pick the sensor shortlist (O9). 
+Result (run 2026-11-26, 35 sensors within 10 km, 31 scored on winter 2025/26): verdict DO NOT adopt a single factor.
+- The factor fixes the LEVEL in winter: pooled factor 1.43; median gap to the Embassy 34.5 -> 14.6 ug/m3, bias about +30 -> +5.
+- It does little for the FORECAST: median gain 12.9% raw vs 14.1% pooled (+1.1 points; rule: >= 2.0); better on 58% of sensors (rule: 60%).
+  The model is more robust to the scale than expected: calibration changes how the number reads, not how well we forecast.
+- The ratio changes by season: monthly medians from 1.26 (June) to 1.67 (November); winter 1.50-1.58. The reported spread of 2.14x
+  is inflated by months with 2-4 sensors (May, July, August); with months of >= 20 sensors only it is about 1.33x, still above 1.25.
+  Two other criteria failed on their own, so the verdict does not depend on this one. The rule was not changed after seeing the result.
+- One sensor shows a ratio of 0.00 in June (broken or flat data); 4 sensors had too few winter hours to be scored.
+- Decision: no correction in the batch job. The API keeps the "sensor's own scale, not calibrated" note.
+  Possible future work: a per-month correction, tested honestly once there are at least two sensor winters.
+
+### O18. Retraining policy (written, manual; no automation built)
+See `docs/retraining_policy.md`. Reason: the Embassy feed has stopped (O16) and the sensor history covers one winter (O17),
+so a challenger could not be tested honestly yet. The next locked test winter is declared now: 2026/27 (Dec 2026 - Feb 2027).
+
 ## Open questions
 
 - Why is 2023/24 harder? Is it the latest winter, so closer to the locked test winters?

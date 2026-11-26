@@ -35,6 +35,8 @@ jobs:
           python -m hawa.forecasting.actuals --help
           python -m hawa.db.init --help
           python -m hawa.forecasting.loop --help
+          python -m hawa.analysis.data_freshness --help
+          python -m hawa.analysis.calibration --help
 
   docker:
     # Only checks that the image builds (nothing is pushed anywhere).
